@@ -1,0 +1,45 @@
+# Server deployment override.
+#
+# Use this on the VPS when the frontend is deployed separately on Vercel.
+# It exposes only Caddy on 80/443. Postgres, Redis, backend, and executor stay
+# inside the Docker network.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.server.yml up --build -d
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-api.aether.codexarena.app}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@codexarena.app}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+  postgres:
+    ports: []
+
+  redis:
+    ports: []
+
+  executor:
+    ports: []
+
+  backend:
+    ports: []
+    volumes: []
+    command: >
+      sh -c "(prisma migrate deploy --schema=/app/src/prisma/schema.prisma ||
+             prisma db push --schema=/app/src/prisma/schema.prisma) &&
+             uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 1 --h11-max-incomplete-event-size 629145600"
+
+volumes:
+  caddy_data:
+  caddy_config:

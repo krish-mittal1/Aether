@@ -353,20 +353,14 @@ docker compose down
 
 ## Production Deployment
 
-The project includes a production compose override with Nginx:
+The recommended deployment for this project is:
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```text
+aether.codexarena.app      -> Vercel frontend
+api.aether.codexarena.app  -> VPS backend stack
 ```
 
-This starts:
-
-- Nginx on port `80`
-- Frontend production container
-- Backend API
-- Executor
-- PostgreSQL
-- Redis
+That split keeps frontend builds fast on Vercel while the VPS runs the services that need Docker: FastAPI, executor, PostgreSQL, Redis, and HTTPS reverse proxy.
 
 Recommended VPS size:
 
@@ -376,23 +370,83 @@ Recommended: 4 vCPU / 8 GB+ RAM
 Your 4 core / 24 GB server is enough for the full stack.
 ```
 
-For a public deployment, set:
+### DNS
+
+Create these DNS records:
+
+```text
+aether.codexarena.app      CNAME   cname.vercel-dns.com
+api.aether.codexarena.app  A       YOUR_SERVER_PUBLIC_IP
+```
+
+If you use Cloudflare, keep `api.aether.codexarena.app` as DNS-only until Caddy gets the first TLS certificate.
+
+### VPS Backend Deployment
+
+On the server:
+
+```bash
+git clone <your-repo-url> aether
+cd aether
+cp .env.example .env
+nano .env
+```
+
+Set production values:
 
 ```env
-NEXT_PUBLIC_API_URL=https://your-domain.com/api
-NEXT_PUBLIC_SOCKET_URL=https://your-domain.com
-CORS_ORIGINS=https://your-domain.com
+API_DOMAIN=api.aether.codexarena.app
+ACME_EMAIL=admin@codexarena.app
+
+CORS_ORIGINS=https://aether.codexarena.app
+NEXT_PUBLIC_API_URL=https://api.aether.codexarena.app/api
+NEXT_PUBLIC_SOCKET_URL=https://api.aether.codexarena.app
+
 JWT_SECRET=long-random-production-secret
 POSTGRES_PASSWORD=strong-production-password
+DATABASE_URL=postgresql://postgres:strong-production-password@postgres:5432/collab
+REDIS_URL=redis://redis:6379/0
 GROQ_API_KEY=rotated-production-key
 ```
 
-Then put HTTPS in front of it using either:
+Start the server stack:
 
-- Cloudflare proxy
-- Nginx + Certbot
-- Caddy
-- A managed reverse proxy
+```bash
+docker compose -f docker-compose.yml -f docker-compose.server.yml up --build -d
+docker compose -f docker-compose.yml -f docker-compose.server.yml ps
+```
+
+Check logs:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.server.yml logs -f caddy
+docker compose -f docker-compose.yml -f docker-compose.server.yml logs -f backend
+```
+
+The server override exposes only ports `80` and `443`. PostgreSQL, Redis, backend, and executor stay inside the Docker network.
+
+### Vercel Frontend Deployment
+
+In Vercel, import the repo and set:
+
+```text
+Root Directory: frontend
+Build Command: npm run build
+Output: Next.js default
+```
+
+Environment variables:
+
+```env
+NEXT_PUBLIC_API_URL=https://api.aether.codexarena.app/api
+NEXT_PUBLIC_SOCKET_URL=https://api.aether.codexarena.app
+```
+
+Add the custom domain in Vercel:
+
+```text
+aether.codexarena.app
+```
 
 ## Deployment Notes
 

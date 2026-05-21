@@ -1,4 +1,4 @@
-.PHONY: dev build docker-up docker-down migrate seed test clean
+.PHONY: dev build docker-up docker-down server-up server-down migrate seed test clean
 
 dev:
 	docker compose up --build
@@ -11,6 +11,12 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+server-up:
+	docker compose -f docker-compose.yml -f docker-compose.server.yml up --build -d
+
+server-down:
+	docker compose -f docker-compose.yml -f docker-compose.server.yml down
 
 migrate:
 	docker compose run --rm backend prisma db push --schema=/app/src/prisma/schema.prisma
