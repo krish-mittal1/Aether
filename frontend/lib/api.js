@@ -22,9 +22,13 @@ function attachAuthInterceptor(instance) {
     (r) => r,
     (error) => {
       if (error.response?.status === 401 && typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
+        const requestUrl = String(error.config?.url || "");
+        const isSessionCheck = requestUrl.includes("/auth/me");
+        if (isSessionCheck) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          if (!window.location.pathname.startsWith("/login")) window.location.href = "/login";
+        }
       }
       return Promise.reject(error);
     }
