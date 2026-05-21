@@ -1,244 +1,489 @@
-# Collab Code Editor
+# Aether - Real-Time Collaborative Code Editor
 
-A production-style real-time collaborative code editor built with Next.js, FastAPI, Socket.IO, Monaco Editor, PostgreSQL, Redis, Prisma, Docker, and a sandboxed execution service.
+Aether is a browser-based collaborative coding workspace built around the idea of a lightweight VS Code / Replit-style environment that can run locally with Docker.
 
-## Features
+The project supports authenticated workspaces, shared editing, nested files and folders, room chat, live presence, Monaco Editor, AI-assisted coding, and sandboxed code execution. It is designed as a production-style portfolio project: the architecture is modular, the services are containerized, and the core workflows work end-to-end.
 
-- JWT signup/login with bcrypt password hashing
-- Protected room dashboard and profile pages
-- Create, join, delete, and invite to rooms by room ID
-- Monaco-based collaborative editor with tabs and language modes
-- Realtime code synchronization over Socket.IO
-- Version-aware collaboration with conflict detection and file version history
-- Live presence, cursor movement events, typing indicators, and reconnect recovery
-- Visual remote cursor decorations inside Monaco Editor
-- File explorer with nested file/folder model, create/delete/rename, and autosave
-- IDE-style explorer with folder picker import, drag/drop import, context menu, tabs, and local save-back where the browser supports File System Access
-- Room chat with persisted messages
-- Redis-backed room presence and socket session tracking
-- PostgreSQL persistence through Prisma schema and generated Python client
-- Sandboxed code execution service for Python, JavaScript, and C++
-- Execution input/output limits, timeout, resource caps, and basic dangerous-pattern rejection
-- Docker Compose local environment
-- API, auth, and executor tests
+It is not pretending to be a full enterprise IDE. The current goal is more practical: a strong, understandable collaborative IDE that can be run, demonstrated, extended, and deployed on a VPS.
 
-## Architecture
+## What It Does
 
-```mermaid
-flowchart LR
-  Browser[Next.js + Monaco] -->|REST /api| API[FastAPI]
-  Browser <-->|Socket.IO| API
-  API -->|Prisma Client Python| PG[(PostgreSQL)]
-  API -->|presence/session state| Redis[(Redis)]
-  API -->|POST /execute| Exec[Executor Service]
-  Exec -->|timeout subprocess| Runtime[Python / Node / g++]
-```
+Users can sign up, create a room, invite others with a room ID, edit files together in real time, chat inside the room, run code, import local folders, and use AI tools for code completion, summaries, fixes, explanations, reviews, optimization, and DSA practice help.
 
-## WebSocket Flow
+The main workspace behaves like a small online IDE:
 
-```mermaid
-sequenceDiagram
-  participant A as User A Browser
-  participant API as FastAPI Socket.IO
-  participant R as Redis
-  participant B as User B Browser
-  A->>API: join_room(roomId, JWT)
-  API->>R: store active user/session
-  API-->>B: user-joined
-  A->>API: code_change(fileId, content, baseVersion)
-  API->>API: validate version and persist history
-  API-->>A: code-ack(fileId, version)
-  API-->>B: code-updated(fileId, content, version)
-  B->>API: cursor_change(position)
-  API-->>A: cursor-updated(position, user)
-```
-
-## Execution Pipeline
-
-```mermaid
-flowchart TD
-  Editor[Active file] --> API[POST /api/execute]
-  API --> Executor[Executor container]
-  Executor --> Limit[128KB code limit + timeout]
-  Limit --> Lang{Language}
-  Lang -->|Python| Py[python main.py]
-  Lang -->|JavaScript| JS[node main.js]
-  Lang -->|C++| CPP[g++ compile then run]
-  Py --> Result[stdout/stderr/exitCode/time]
-  JS --> Result
-  CPP --> Result
-```
-
-## Database Relationships
-
-```mermaid
-erDiagram
-  User ||--o{ Room : owns
-  User ||--o{ RoomMember : joins
-  Room ||--o{ RoomMember : contains
-  Room ||--o{ File : stores
-  File ||--o{ File : children
-  Room ||--o{ Message : has
-  User ||--o{ Message : sends
-```
+- Monaco-powered editor with tabs
+- Nested file explorer
+- Create, rename, delete, move, and import files/folders
+- Autosave and dirty-state tracking
+- Realtime code sync over Socket.IO
+- Live room presence
+- Chat panel
+- Terminal/output panel
+- Sandboxed execution for multiple languages
+- AI assistant docked beside the code
+- Inline AI ghost suggestions accepted with `Tab`
+- Whole-file AI summary
+- DSA playground with AI hints, fixes, complexity analysis, edge cases, and inline suggestions
 
 ## Tech Stack
 
-- Frontend: Next.js App Router, JavaScript, TailwindCSS, Monaco Editor, Zustand, Axios
-- Backend: FastAPI, python-socketio, Prisma Client Python, JWT, bcrypt
-- Data: PostgreSQL, Redis
-- Execution: Dockerized FastAPI service running Python, Node.js, and g++
-- DevOps: Docker Compose, Makefile
+**Frontend**
 
-## Quick Start
+- Next.js App Router
+- JavaScript
+- TailwindCSS
+- Monaco Editor
+- Axios
+- Zustand
+
+**Backend**
+
+- FastAPI
+- Python Socket.IO
+- Prisma Client Python
+- JWT authentication
+- bcrypt password hashing
+
+**Data / Realtime**
+
+- PostgreSQL
+- Redis
+- Socket.IO rooms
+
+**Execution**
+
+- Separate FastAPI executor service
+- Docker container isolation
+- Python, JavaScript, TypeScript, C++, and Java execution support
+- Timeout, output limits, memory/process limits, and basic dangerous-pattern checks
+
+**DevOps**
+
+- Docker
+- Docker Compose
+- Nginx production reverse proxy
+- Makefile commands
+
+## High-Level Architecture
+
+```mermaid
+flowchart LR
+    Browser["Next.js Frontend<br/>Monaco Editor"] -->|"REST API"| Backend["FastAPI Backend"]
+    Browser <-->|"Socket.IO"| Backend
+
+    Backend -->|"Prisma Client Python"| Postgres[("PostgreSQL")]
+    Backend -->|"Presence + socket state"| Redis[("Redis")]
+    Backend -->|"Code execution request"| Executor["Executor Service"]
+
+    Executor -->|"Runs code with limits"| Runtime["Python / Node / g++ / Java"]
+```
+
+The frontend is responsible for the IDE experience. The backend owns auth, rooms, file metadata, chat messages, AI proxying, and realtime socket events. Redis keeps presence and socket state lightweight. PostgreSQL stores users, rooms, files, file versions, and messages. The executor is split out so running user code is not mixed directly into the main API process.
+
+## Request Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User Browser
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant R as Redis
+    participant E as Executor
+
+    U->>API: Login / Signup
+    API->>DB: Store or verify user
+    API-->>U: JWT token
+
+    U->>API: Join room
+    API->>DB: Check membership
+    U->>API: Socket.IO connect with JWT
+    API->>R: Track active user
+    API-->>U: Room users + realtime events
+
+    U->>API: Save file
+    API->>DB: Update content + version
+    API-->>U: Save result
+
+    U->>API: Run code
+    API->>E: Execute in sandbox service
+    E-->>API: stdout / stderr / exit code
+    API-->>U: Execution output
+```
+
+## Database Model
+
+```mermaid
+erDiagram
+    User ||--o{ Room : owns
+    User ||--o{ RoomMember : joins
+    Room ||--o{ RoomMember : contains
+    Room ||--o{ File : stores
+    File ||--o{ File : children
+    File ||--o{ FileVersion : has
+    Room ||--o{ Message : has
+    User ||--o{ Message : sends
+```
+
+## Main Features
+
+### Authentication
+
+- Signup
+- Login
+- JWT sessions
+- Password hashing
+- Protected API routes
+- Protected frontend pages
+
+### Rooms
+
+- Create rooms
+- Join by room ID
+- Delete owned rooms
+- Room member validation
+- Invite flow through copied room ID
+
+### Workspace / IDE
+
+- Monaco Editor
+- Multiple open tabs
+- Active file state
+- Dirty file indicators
+- Save and Save All
+- Autosave
+- Nested folder tree
+- Create file/folder
+- Rename file/folder
+- Delete file/folder
+- Move files/folders
+- Folder import
+- Drag/drop import
+- Chromium File System Access API support for local folder sync
+
+### Realtime Collaboration
+
+- Socket.IO room events
+- Realtime file updates
+- Presence list
+- Typing indicators
+- Remote cursor events
+- Reconnect flow
+- Conflict-aware file save/version handling
+
+### Chat
+
+- Room chat
+- Persisted messages
+- Sender details
+- Realtime message delivery
+
+### Code Execution
+
+- Run active file
+- Custom stdin
+- stdout/stderr display
+- Stop request
+- Execution time and exit code
+- Separate executor service
+
+### AI Features
+
+The AI layer uses the backend as a proxy so API keys are not exposed to the browser.
+
+Workspace AI:
+
+- Inline ghost suggestions
+- Complete at cursor
+- Explain selected code or whole file
+- Fix code
+- Optimize code
+- Generate tests
+- Review file
+- Summarize whole active file
+- Ask custom questions about the active file
+- Send AI response to chat
+
+DSA Playground AI:
+
+- Inline suggestions while typing
+- `Tab` accepts suggestions
+- DSA snippets for common patterns
+- Hints
+- Bug fixing
+- Complexity analysis
+- Edge-case generation
+- Optimization help
+- Custom AI questions
+
+## Project Structure
+
+```text
+collab-code-editor/
+  backend/
+    src/
+      controllers/      REST API handlers
+      middleware/       auth, errors, rate limiting
+      routes/           API router wiring
+      services/         AI, execution, presence, terminal services
+      sockets/          Socket.IO event handlers
+      prisma/           Prisma schema and seed script
+    tests/
+    Dockerfile
+
+  frontend/
+    app/                Next.js pages and layouts
+    components/         editor, explorer, chat, toolbar, modals
+    hooks/              auth and UI hooks
+    lib/                API, socket, local filesystem helpers
+    store/              Zustand auth store
+    Dockerfile
+
+  executor/
+    main.py             isolated code execution API
+    Dockerfile
+    test_executor.py
+
+  docker/
+    nginx.conf          production reverse proxy config
+
+  docker-compose.yml
+  docker-compose.prod.yml
+  Makefile
+  README.md
+```
+
+## Local Development
+
+Start the backend stack:
 
 ```bash
-cd collab-code-editor
-docker compose up --build
+docker compose up -d
+```
+
+Check containers:
+
+```bash
+docker compose ps
+```
+
+Run the frontend locally:
+
+```bash
+cd frontend
+npm run dev
 ```
 
 Open:
 
-- Frontend: http://localhost:3000
-- Backend health: http://localhost:8000/health
-- Executor health: http://localhost:8080/health
+```text
+http://localhost:3000
+```
 
-For the closest VS Code-like local folder workflow, use Chrome or Edge on `localhost`, then click **Open Folder** in the room header. Chromium browsers support the File System Access API, which lets the app keep file handles and save edits back to local files after permission is granted. Other browsers can still import folders through the Explorer import button, but edits are saved to the workspace database only.
+Backend:
 
-The backend runs `prisma db push` automatically on startup.
+```text
+http://localhost:8000
+```
+
+Executor:
+
+```text
+http://localhost:8080
+```
+
+The frontend is intentionally run outside Docker during local development because it gives faster hot reload and avoids rebuilding the frontend image after every UI change.
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=change-this-password
+POSTGRES_DB=collab
+POSTGRES_PORT=5432
+
+REDIS_PORT=6379
+BACKEND_PORT=8000
+EXECUTOR_PORT=8080
+
+DATABASE_URL=postgresql://postgres:change-this-password@postgres:5432/collab
+REDIS_URL=redis://redis:6379/0
+
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_MINUTES=1440
+
+CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+EXECUTOR_URL=http://executor:8080
+
+GROQ_API_KEY=your-groq-key
+GROQ_MODEL=llama-3.1-8b-instant
+
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_SOCKET_URL=http://localhost:8000
+
+EXECUTION_TIMEOUT_SECONDS=10
+EXECUTION_TMP_ROOT=/tmp
+```
+
+Important: if an API key was ever committed, pasted, or shared, rotate it before deployment.
 
 ## Useful Commands
 
 ```bash
-make docker-up      # start everything in background
+make docker-up      # build and start containers in background
 make docker-down    # stop containers
-make build          # build images
+make build          # build Docker images
 make migrate        # push Prisma schema
-make seed           # create demo user and room
+make seed           # seed demo data
 make test           # run backend and executor tests
-make clean          # stop and remove volumes
+make clean          # remove containers and volumes
 ```
 
-Demo credentials after `make seed`:
+Manual equivalents:
 
-- Email: `demo@example.com`
-- Password: `password123`
+```bash
+docker compose up -d
+docker compose logs -f backend
+docker compose logs -f executor
+docker compose down
+```
 
-## API Summary
+## Production Deployment
 
-Auth:
+The project includes a production compose override with Nginx:
 
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```
 
-Rooms:
+This starts:
 
-- `GET /api/rooms`
-- `POST /api/rooms`
-- `GET /api/rooms/{id}`
-- `POST /api/rooms/join`
-- `DELETE /api/rooms/{id}`
+- Nginx on port `80`
+- Frontend production container
+- Backend API
+- Executor
+- PostgreSQL
+- Redis
 
-Files:
+Recommended VPS size:
 
-- `GET /api/files/{roomId}`
-- `POST /api/files`
-- `PATCH /api/files/{id}`
-- `DELETE /api/files/{id}`
-- `GET /api/files/{id}/versions`
+```text
+Minimum comfortable: 2 vCPU / 4 GB RAM
+Recommended: 4 vCPU / 8 GB+ RAM
+Your 4 core / 24 GB server is enough for the full stack.
+```
 
-Chat:
+For a public deployment, set:
 
-- `GET /api/chat/{roomId}`
+```env
+NEXT_PUBLIC_API_URL=https://your-domain.com/api
+NEXT_PUBLIC_SOCKET_URL=https://your-domain.com
+CORS_ORIGINS=https://your-domain.com
+JWT_SECRET=long-random-production-secret
+POSTGRES_PASSWORD=strong-production-password
+GROQ_API_KEY=rotated-production-key
+```
 
-Execution:
+Then put HTTPS in front of it using either:
 
-- `POST /api/execute`
-
-## Socket Events
-
-Client emits:
-
-- `join_room` / `join-room`
-- `leave_room` / `leave-room`
-- `code_change` / `code-change`
-- `cursor_change` / `cursor-change`
-- `typing`
-- `send_message` / `send-message`
-- `create_file` / `create-file`
-- `delete_file` / `delete-file`
-- `rename_file` / `rename-file`
-
-Server emits:
-
-- `user-joined`
-- `user-left`
-- `room-users`
-- `code-updated`
-- `code-ack`
-- `code-conflict`
-- `cursor-updated`
-- `user-typing`
-- `receive-message`
-- `file-created`
-- `file-deleted`
-- `file-renamed`
+- Cloudflare proxy
+- Nginx + Certbot
+- Caddy
+- A managed reverse proxy
 
 ## Deployment Notes
 
-- Frontend can deploy to Vercel with `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SOCKET_URL`.
-- Backend can deploy to Railway/Render/Fly with PostgreSQL, Redis, and the Prisma schema.
-- Executor should be deployed as an isolated internal service with CPU/memory limits and no public ingress when possible.
-- Use a strong `JWT_SECRET`, HTTPS, stricter CORS, and separate production database credentials.
+The app is ready for a portfolio/demo deployment on a VPS, but there are a few things to clean up before calling it a hardened production SaaS:
 
-## Scaling Discussion
+- Add real Prisma migrations instead of relying on `prisma db push`.
+- Rotate all exposed AI keys.
+- Use HTTPS only.
+- Lock CORS to the real domain.
+- Use strong database passwords.
+- Consider managed PostgreSQL backups.
+- Harden the executor if strangers will run arbitrary code.
+- Add monitoring and log retention.
+- Add CI checks for backend tests, frontend syntax/build, and Docker config.
 
-The app uses Redis for presence, which is the first step toward multi-instance socket scaling. For horizontal Socket.IO scaling, add a Redis Socket.IO manager/adaptor to broadcast room events across backend instances. For heavier collaboration, replace last-write-wins document updates with CRDT/OT operations and persist version history.
+## Security Notes
 
-## Completed
+The executor is isolated into its own container and uses timeout/resource limits. That is good enough for a controlled demo, but public code execution is a serious security problem. For a real multi-tenant product, the executor should be upgraded to per-run containers, stronger seccomp/AppArmor profiles, network-disabled execution, or microVM isolation.
 
-- Authentication, sessions, and route protection
-- Room creation/joining and membership checks
-- Realtime editing with autosave, version acknowledgements, and conflict protection
-- IDE-style file explorer with create/delete/rename, nested folders, context menu, local folder import, drag/drop import, and editor tabs
-- Chat and presence
-- Visual remote cursors and typing events
-- Monaco editor integration
-- Dockerized execution for Python, JavaScript, and C++ with timeout/resource limits
-- stdin input for code execution
-- PostgreSQL, Redis, Prisma schema, Docker Compose, Makefile
+The backend keeps AI keys server-side. The browser only calls the backend AI endpoints.
 
-## Partially Completed
+## Testing
 
-- Reconnection uses Socket.IO reconnect and state reload; true offline editing with merge replay is future work.
-- Collaboration is version-aware and conflict-protected, but a full CRDT engine would be stronger for heavy simultaneous editing.
-- Execution is isolated in a constrained service container; per-run containers or microVMs would be stronger for hostile public workloads.
-- Local save-back depends on Chromium File System Access permissions; browser security prevents universal VS Code-style filesystem access on every browser.
+Backend tests:
 
-## Future Improvements
+```bash
+cd backend
+python -m pytest tests -q
+```
 
-- Optional CRDT integration with Yjs or Automerge for Google Docs-grade merges
-- Redis Socket.IO manager for multi-backend fanout
-- Version history and restore points
-- Room roles and permissions
-- Git import/export
-- AI autocomplete
-- Voice/video collaboration
-- Per-run Docker or Firecracker isolation for code execution
+Executor tests:
 
-## IDE Features Now Implemented
+```bash
+cd executor
+python -m pytest test_executor.py -q
+```
 
-- Workspace-style room editor with persisted open tabs, active file, and autosave preference.
-- File explorer with nested folders, create, rename, delete, move by drag/drop, right-click context menu, folder picker import, and external drag/drop import.
-- Editor tabs with dirty indicators, Save, Save All, autosave toggle, minimap, bracket colorization, find, go to line, and format-document command.
-- Quick open and global search with `Ctrl+P` / `Ctrl+Shift+F`.
-- Command palette with `Ctrl+Shift+P`.
-- Terminal panel with stdout/stderr, stdin, run, and stop request.
-- Status bar showing online users, unsaved files, autosave state, active path, language, version, and last save time.
+Frontend syntax check:
+
+```bash
+cd frontend
+node --check app/playground/page.js
+node --check "app/room/[id]/page.js"
+```
+
+Production config check:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+```
+
+## Known Limitations
+
+- Collaboration is version-aware, but it is not a full CRDT/OT editor yet.
+- Local filesystem save-back depends on browser support for the File System Access API.
+- Prisma migrations still need to be formalized.
+- The executor is good for demo use, but not hardened enough for hostile public workloads.
+- Frontend and socket tests should be expanded.
+
+## Why This Project Matters
+
+This project touches the kind of engineering that appears in real collaborative developer tools:
+
+- realtime event systems
+- authenticated multi-user workspaces
+- state synchronization
+- persistent file trees
+- execution isolation
+- AI-assisted coding
+- Dockerized service architecture
+- deployment tradeoffs
+
+It is a strong resume project because it is not just CRUD. It combines frontend product work, backend APIs, realtime systems, data modeling, infrastructure, and security-aware execution design.
 
 ## Resume Bullets
 
-- Built a real-time collaborative IDE with Next.js, Monaco Editor, FastAPI, Socket.IO, PostgreSQL, Redis, and Docker.
-- Implemented JWT auth, room membership, persisted file trees, realtime editor synchronization, chat, presence, and sandboxed code execution.
-- Designed containerized local infrastructure with Docker Compose, Prisma schema management, API tests, and scalable WebSocket event architecture.
+- Built a real-time collaborative IDE using Next.js, Monaco Editor, FastAPI, Socket.IO, PostgreSQL, Redis, and Docker.
+- Implemented authenticated rooms, nested file management, editor tabs, autosave, realtime code sync, chat, presence, and conflict-aware saves.
+- Added a sandboxed code execution service supporting multiple languages with stdin, stdout/stderr capture, timeouts, and container resource limits.
+- Integrated Groq-powered AI features including inline ghost completions, file summaries, code explanation, bug fixing, optimization, review, and DSA playground assistance.
+- Designed a Docker Compose deployment with separate frontend, backend, executor, PostgreSQL, Redis, and Nginx reverse proxy services.
+
+## Future Improvements
+
+- Add Yjs or Automerge for CRDT-based collaboration.
+- Add Redis Socket.IO adapter for multi-backend scaling.
+- Add proper Prisma migration files.
+- Add GitHub import/export.
+- Add per-room roles and permissions.
+- Add file version restore UI.
+- Add stronger sandbox isolation for public execution.
+- Add CI/CD pipeline.
+- Add telemetry, metrics, and error monitoring.
+
