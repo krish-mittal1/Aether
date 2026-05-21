@@ -219,7 +219,7 @@ DSA Playground AI:
 ## Project Structure
 
 ```text
-collab-code-editor/
+./
   backend/
     src/
       controllers/      REST API handlers
