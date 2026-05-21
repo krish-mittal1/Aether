@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+
+# Env files — NEVER commit real secrets
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Prisma generated client
+backend/src/prisma/__pycache__/
+
+# Docker
+*.tar
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  color: #f1f5f9;
+  background: #0f1115;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Sleek global scrollbar styles */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(143,179,155,0.15);
+  border-radius: 9999px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(143,179,155,0.4);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(143,179,155,0.15) transparent;
+}
+
+/* Monaco Remote Cursor custom decoration overrides */
+.monaco-editor .remote-cursor {
+  border-left: 2px solid #8fb39b;
+}
+
+.monaco-editor .remote-cursor-line {
+  background: rgba(143,179,155,0.04);
+}
+
+/* Custom premium layouts & glassmorphism styling */
+.glass-card {
+  background: rgba(7, 11, 16, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(143,179,155,0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.premium-card {
+  background: rgba(7, 11, 16, 0.92);
+  border: 1px solid rgba(143,179,155,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-card:hover {
+  border-color: rgba(143,179,155,0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(143,179,155,0.08);
+  transform: translateY(-2px);
+}
+
+.glass-input {
+  background: rgba(3, 5, 8, 0.75);
+  border: 1px solid rgba(143,179,155,0.12);
+  color: #f8fafc;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus {
+  border-color: rgba(143,179,155,0.5);
+  box-shadow: 0 0 16px rgba(143,179,155,0.15);
+  background: rgba(3, 5, 8, 0.9);
+}
+
+.text-gradient {
+  background: #ffffff;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+}
+
+.glow-overlay {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(130px);
+  pointer-events: none;
+  opacity: 0.15;
+  mix-blend-mode: screen;
+  transition: opacity 0.5s ease;
+}
+
+.glow-shadow {
+  box-shadow: 0 0 30px rgba(143,179,155,0.15);
+}
+
+.glow-shadow-sage {
+  box-shadow: 0 0 30px rgba(143,179,155,0.25);
+}
+
+/* Premium IDE shell */
+.ide-shell {
+  background: #0f1115;
+}
+
+.ide-topbar {
+  background: rgba(18, 20, 25, 0.98);
+  border-bottom: 1px solid rgba(255,255,255,0.095);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.035), 0 10px 28px rgba(0,0,0,0.24);
+  backdrop-filter: blur(18px);
+}
+
+.ide-panel {
+  background: #171b20;
+  border-color: rgba(255,255,255,0.09);
+}
+
+.ide-rail {
+  background: #15191e;
+  border-color: rgba(255,255,255,0.09);
+  box-shadow: inset -1px 0 rgba(255,255,255,0.04);
+}
+
+.ide-button {
+  border: 1px solid rgba(143,179,155,0.08);
+  background: rgba(3, 7, 10, 0.8);
+  color: #94a3b8;
+}
+
+.ide-button:hover {
+  border-color: rgba(143,179,155,0.30);
+  background: rgba(7, 11, 16, 0.9);
+  color: #f8fafc;
+}
+
+.ide-primary {
+  border: 1px solid rgba(88, 204, 142, 0.55);
+  background: #7aa884;
+  color: #07110b;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.ide-primary:hover {
+  background: #91bd98;
+  filter: none;
+  box-shadow: none;
+}
+
+.ide-soft-active {
+  border-color: rgba(143,179,155,0.35) !important;
+  background: rgba(143,179,155,0.10) !important;
+  color: #8fb39b !important;
+}
+
+.ide-editor-frame {
+  background: #1f1f1f;
+}
+
+.ide-tabbar {
+  background: #181c21;
+  border-color: rgba(255,255,255,0.085);
+}
+
+.ide-tab-active {
+  background: #20252b;
+  color: #f3f4f6;
+  border-bottom: 1px solid #8fb39b;
+}
+
+.ide-status {
+  background: #15191e;
+  border-top: 1px solid rgba(255,255,255,0.09);
+}
+
+.ide-input {
+  background: rgba(3, 5, 8, 0.8);
+  border: 1px solid rgba(143,179,155,0.12);
+  color: #e2e8f0;
+}
+
+.ide-input:focus {
+  border-color: rgba(143,179,155,0.4);
+  box-shadow: 0 0 0 3px rgba(143,179,155,0.08);
+}
+
+.monaco-editor,
+.monaco-editor-background,
+.monaco-editor .margin {
+  background-color: #1f1f1f !important;
+}
+
+.monaco-editor .current-line {
+  border: none !important;
+  background-color: #2a2a2a !important;
+}

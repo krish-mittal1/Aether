@@ -1,0 +1,113 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-collab}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-collab}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  executor:
+    build:
+      context: ./executor
+    restart: unless-stopped
+    environment:
+      EXECUTION_TIMEOUT_SECONDS: ${EXECUTION_TIMEOUT_SECONDS:-10}
+      EXECUTION_TMP_ROOT: ${EXECUTION_TMP_ROOT:-/tmp}
+    read_only: true
+    tmpfs:
+      - /tmp:exec,size=128m
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    ports:
+      - "${EXECUTOR_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-Collab Code Editor API}
+      API_PREFIX: ${API_PREFIX:-/api}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/collab}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-1440}
+      # Internal Docker network origins — add http://localhost:3000 for dev
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://frontend:3000}
+      EXECUTOR_URL: ${EXECUTOR_URL:-http://executor:8080}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      executor:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    # Use migrate deploy (safe for prod) — db push is destructive in prod
+    command: >
+      sh -c "(prisma migrate deploy --schema=/app/src/prisma/schema.prisma ||
+             prisma db push --schema=/app/src/prisma/schema.prisma) &&
+             uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 1 --reload --h11-max-incomplete-event-size 629145600"
+    volumes:
+      - ./backend/src:/app/src
+
+
+  # Frontend is run via: npm run dev (inside /frontend folder)
+  # This gives instant hot-reload without needing Docker rebuilds.
+  # Uncomment below ONLY if you want to deploy the production build.
+  #
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     args:
+  #       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+  #       NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:8000}
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-production}
+  #   depends_on:
+  #     - backend
+  #   ports:
+  #     - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:
+  redis_data:
