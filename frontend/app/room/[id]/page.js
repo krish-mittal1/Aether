@@ -41,6 +41,7 @@ export default function RoomPage() {
   const inlineAiTriggerTimerRef = useRef(null);
   const inlineAiRequestSeqRef = useRef(0);
   const terminalResizeRef = useRef(false);
+  const panelResizeRef = useRef(null);
   const conflictToastRef = useRef(0);
   const lastLocalContentRef = useRef("");       // last content typed (for remote-edit detection)
   const pendingContentRef = useRef({});          // fileId → latest typed content (not yet flushed to state)
@@ -85,6 +86,8 @@ export default function RoomPage() {
   const [showChat, setShowChat] = useState(true);
   const [showTerminal, setShowTerminal] = useState(true);
   const [terminalHeight, setTerminalHeight] = useState(238);
+  const [explorerWidth, setExplorerWidth] = useState(340);
+  const [rightPanelWidth, setRightPanelWidth] = useState(380);
   const [activeActivityPanel, setActiveActivityPanel] = useState("explorer");
   // Tab context menu
   const [tabMenu, setTabMenu] = useState(null);
@@ -107,12 +110,24 @@ export default function RoomPage() {
 
   useEffect(() => {
     function onMove(event) {
-      if (!terminalResizeRef.current) return;
-      const nextHeight = Math.min(460, Math.max(150, window.innerHeight - event.clientY - 28));
-      setTerminalHeight(nextHeight);
+      if (terminalResizeRef.current) {
+        const nextHeight = Math.min(460, Math.max(150, window.innerHeight - event.clientY - 28));
+        setTerminalHeight(nextHeight);
+        return;
+      }
+      const resize = panelResizeRef.current;
+      if (!resize) return;
+      const dx = event.clientX - resize.startX;
+      if (resize.panel === "explorer") {
+        setExplorerWidth(Math.min(520, Math.max(260, resize.startWidth + dx)));
+      }
+      if (resize.panel === "right") {
+        setRightPanelWidth(Math.min(560, Math.max(320, resize.startWidth - dx)));
+      }
     }
     function onUp() {
       terminalResizeRef.current = false;
+      panelResizeRef.current = null;
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     }
@@ -123,6 +138,16 @@ export default function RoomPage() {
       window.removeEventListener("mouseup", onUp);
     };
   }, []);
+
+  const beginPanelResize = useCallback((panel, event) => {
+    panelResizeRef.current = {
+      panel,
+      startX: event.clientX,
+      startWidth: panel === "explorer" ? explorerWidth : rightPanelWidth,
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, [explorerWidth, rightPanelWidth]);
 
   useEffect(() => {
     if (!token || !user) return;
@@ -1146,13 +1171,12 @@ Keep it concise but useful. Do not rewrite the file.`
   );
 
   const rightPanelVisible = !zenMode && (aiPanelOpen || showChat);
-  const rightPanelWidth = "360px";
-  const colLayout = [showExplorer && !zenMode && "320px", "minmax(0,1fr)", rightPanelVisible && rightPanelWidth].filter(Boolean).join(" ");
+  const colLayout = [showExplorer && !zenMode && `${explorerWidth}px`, "minmax(0,1fr)", rightPanelVisible && `${rightPanelWidth}px`].filter(Boolean).join(" ");
 
   return (
     <main className={`ide-shell grid h-screen text-slate-200 font-sans ${zenMode ? "grid-rows-[52px_1fr]" : "grid-rows-[52px_1fr_28px]"}`}>
       {/* Header */}
-      <header className="ide-topbar z-20 grid h-[52px] grid-cols-[minmax(320px,440px)_minmax(320px,620px)_auto] items-center gap-4 px-4 select-none">
+      <header className="ide-topbar z-20 grid h-[52px] grid-cols-[minmax(260px,420px)_minmax(260px,1fr)_auto] items-center gap-3 px-4 select-none">
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/dashboard" className="flex h-9 w-9 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/[0.06] hover:text-white" title="Dashboard">
             <Menu size={18} />
@@ -1184,17 +1208,17 @@ Keep it concise but useful. Do not rewrite the file.`
           <span className="ml-3 shrink-0 rounded border border-white/10 bg-black/25 px-2 py-0.5 font-mono text-[11px] text-slate-500">Ctrl P</span>
         </button>
         
-        <div className="flex min-w-0 items-center justify-end gap-1.5">
-          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/dashboard?join=${roomId}`).then(() => toast.success("Invite link copied!")); }} className="hidden h-9 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3.5 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] lg:inline-flex">
+        <div className="flex min-w-0 items-center justify-end gap-1.5 overflow-hidden">
+          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/dashboard?join=${roomId}`).then(() => toast.success("Invite link copied!")); }} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] lg:inline-flex">
             <Copy size={13} className="text-slate-400" /> Invite
           </button>
-          <button onClick={openFolderWithFileSystemAccess} className="hidden h-9 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3.5 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] xl:inline-flex">
+          <button onClick={openFolderWithFileSystemAccess} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] 2xl:inline-flex">
             <RefreshCw size={13} className="text-slate-400" /> Sync Folder
           </button>
-          <button onClick={saveAllFiles} className="hidden h-9 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3.5 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] md:inline-flex">
+          <button onClick={saveAllFiles} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] xl:inline-flex">
             <Download size={13} className="text-slate-400" /> Save All
           </button>
-          <button onClick={saveActiveFile} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#7aa884] px-4 text-[13px] font-semibold uppercase text-[#07110b] transition hover:bg-[#91bd98]">
+          <button onClick={saveActiveFile} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#7aa884] px-4 text-[13px] font-semibold uppercase text-[#07110b] transition hover:bg-[#91bd98]">
             <Save size={13} /> Save
           </button>
         </div>
@@ -1218,8 +1242,13 @@ Keep it concise but useful. Do not rewrite the file.`
         <div className="min-h-0 flex-1" style={{ display: "grid", gridTemplateColumns: colLayout, overflow: "hidden", height: "100%" }}>
           {/* Explorer */}
           {showExplorer && !zenMode && (
-            <div className="overflow-hidden border-r border-white/10 shadow-2xl shadow-black/20" style={{ height: "100%" }}>
+            <div className="relative overflow-hidden border-r border-white/10 shadow-2xl shadow-black/20" style={{ height: "100%" }}>
               <FileExplorer files={files} activeFile={activeFile} onSelect={selectFile} onCreate={createFile} onImportFolder={importFolder} onDelete={deleteFile} onRename={renameFile} onMove={moveFile} localHandles={localHandles} />
+              <div
+                className="absolute right-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#7aa884]/50"
+                onMouseDown={(event) => beginPanelResize("explorer", event)}
+                title="Drag to resize explorer"
+              />
             </div>
           )}
 
@@ -1227,8 +1256,8 @@ Keep it concise but useful. Do not rewrite the file.`
           <div className="flex min-w-0 flex-col min-h-0 overflow-hidden border-x border-white/10 bg-[#1f1f1f] shadow-2xl shadow-black/20">
             {/* VS Code style menu bar */}
             {!zenMode && (
-              <div className="flex h-[46px] shrink-0 items-center justify-between border-b border-white/10 bg-[#15191e] px-3">
-                <div className="flex min-w-0 items-center gap-4 text-[14px] text-slate-200">
+              <div className="flex h-[46px] shrink-0 items-center gap-3 overflow-hidden border-b border-white/10 bg-[#15191e] px-3">
+                <div className="scrollbar-thin flex min-w-0 flex-1 items-center gap-4 overflow-x-auto whitespace-nowrap pr-2 text-[14px] text-slate-200">
                   {["File", "Edit", "View", "Go", "Run", "Terminal", "Help"].map((item) => (
                     <button key={item} className="transition hover:text-white">{item}</button>
                   ))}
@@ -1252,7 +1281,7 @@ Keep it concise but useful. Do not rewrite the file.`
                     Save
                   </button>
                 </div>
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex shrink-0 items-center gap-2 text-slate-400">
                   <button onClick={() => setMinimap(v => !v)} className="rounded p-1 transition hover:bg-white/10 hover:text-white" title="Toggle minimap"><PanelRight size={15} /></button>
                   <button onClick={() => setCommandOpen(true)} className="rounded p-1 transition hover:bg-white/10 hover:text-white" title="More"><MoreHorizontal size={16} /></button>
                 </div>
@@ -1374,7 +1403,12 @@ Keep it concise but useful. Do not rewrite the file.`
 
           {/* Right rail: AI or Chat */}
           {rightPanelVisible && (
-            <div className="flex min-h-0 overflow-hidden border-l border-white/10 bg-[#171b20] shadow-2xl shadow-black/25">
+            <div className="relative flex min-h-0 overflow-hidden border-l border-white/10 bg-[#171b20] shadow-2xl shadow-black/25">
+              <div
+                className="absolute left-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#7aa884]/50"
+                onMouseDown={(event) => beginPanelResize("right", event)}
+                title="Drag to resize side panel"
+              />
               {aiPanelOpen ? (
                 <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-[#171b20]">
                   <div className="flex shrink-0 items-center justify-between border-b border-slate-700/25 bg-white/[0.025] px-4 py-3">
