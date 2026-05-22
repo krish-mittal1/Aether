@@ -45,9 +45,9 @@ export function OutputPanel({
         theme: {
           background: "#07070a",
           foreground: "#cbd5e1",
-          cursor: "#8b5cf6",
+          cursor: "#9ed4aa",
           cursorAccent: "#07070a",
-          selectionBackground: "rgba(139, 92, 246, 0.28)",
+          selectionBackground: "rgba(111, 185, 130, 0.24)",
           black: "#1a1a2e",
           red: "#f87171",
           green: "#4ade80",
@@ -61,8 +61,8 @@ export function OutputPanel({
           brightGreen: "#86efac",
           brightYellow: "#fde68a",
           brightBlue: "#93c5fd",
-          brightMagenta: "#c4b5fd",
-          brightCyan: "#a5f3fc",
+          brightMagenta: "#b8a8c8",
+          brightCyan: "#b5c5bd",
           brightWhite: "#f8fafc",
         },
         fontSize: 14,
@@ -178,18 +178,18 @@ export function OutputPanel({
   }
 
   return (
-    <section className="flex shrink-0 select-none flex-col bg-[#05070a] font-mono" style={{ height }}>
+    <section className="flex shrink-0 select-none flex-col bg-[#17181c] font-mono" style={{ height }}>
       {/* VS Code Tab Bar */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-white/10 bg-[#12161b] px-3">
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-white/10 bg-[#1b1d22] px-3">
         <div className="flex h-full items-center gap-1">
           {/* Terminal Tab */}
           <button
             onClick={() => setActiveTab("terminal")}
             className={`relative flex h-full items-center gap-1.5 px-3 text-[11px] font-black uppercase tracking-widest transition ${
-              activeTab === "terminal" ? "text-[#8fb39b]" : "text-slate-500 hover:text-slate-300"
+              activeTab === "terminal" ? "text-[#9ed4aa]" : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            {activeTab === "terminal" && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#8fb39b] " />}
+            {activeTab === "terminal" && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#6fb982] " />}
             &gt;_ TERMINAL
           </button>
 
@@ -197,10 +197,10 @@ export function OutputPanel({
           <button
             onClick={() => setActiveTab("compiler")}
             className={`relative flex h-full items-center gap-1.5 px-3 text-[11px] font-black uppercase tracking-widest transition ${
-              activeTab === "compiler" ? "text-[#8fb39b]" : "text-slate-500 hover:text-slate-300"
+              activeTab === "compiler" ? "text-[#9ed4aa]" : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            {activeTab === "compiler" && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#8fb39b] " />}
+            {activeTab === "compiler" && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#6fb982] " />}
             COMPILER OUTPUT
           </button>
         </div>
@@ -219,9 +219,9 @@ export function OutputPanel({
               <button 
                 disabled={!canRun}
                 onClick={handleRunInTerminal}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#8fb39b] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#8fb39b] transition hover:bg-[#8fb39b]/10 disabled:cursor-not-allowed disabled:opacity-30"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#6fb982] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/10 disabled:cursor-not-allowed disabled:opacity-30"
               >
-                <Play size={8} className="fill-current text-[#8fb39b]" /> RUN CODE
+                <Play size={8} className="fill-current text-[#9ed4aa]" /> RUN CODE
               </button>
             </>
           ) : (
@@ -237,9 +237,9 @@ export function OutputPanel({
                 <button 
                   disabled={!canRun} 
                   onClick={onRun}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#8fb39b] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#8fb39b] transition hover:bg-[#8fb39b]/10 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#6fb982] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/10 disabled:cursor-not-allowed disabled:opacity-30"
                 >
-                  <Play size={8} className="fill-current text-[#8fb39b]" /> RUN CODE
+                  <Play size={8} className="fill-current text-[#9ed4aa]" /> RUN CODE
                 </button>
               )}
             </div>
@@ -251,7 +251,7 @@ export function OutputPanel({
       <div className="flex-1 min-h-0 relative">
         {/* Tab 1: Interactive PTY Terminal */}
         <div 
-          className={`absolute inset-0 overflow-hidden bg-[#05070a] p-2.5 ${
+          className={`absolute inset-0 overflow-hidden bg-[#17181c] p-2.5 ${
             activeTab === "terminal" ? "block" : "hidden"
           }`}
         >
@@ -265,7 +265,7 @@ export function OutputPanel({
           }`}
         >
           {/* Output Screen */}
-          <div className="scrollbar-thin flex-1 overflow-auto bg-[#030407] p-4 font-mono text-[14px] leading-relaxed select-text">
+          <div className="scrollbar-thin flex-1 overflow-auto bg-[#111216] p-4 font-mono text-[14px] leading-relaxed select-text">
             {output ? (
               <div className="space-y-1">
                 {output.split("\n").map((line, idx) => {
@@ -290,8 +290,8 @@ export function OutputPanel({
           </div>
 
           {/* Stdin input bar */}
-          <div className="relative flex h-11 shrink-0 items-center border-t border-white/10 bg-[#030407] px-3.5">
-            <span className="mr-2 shrink-0 select-none text-[11px] font-extrabold uppercase tracking-wider text-[#8fb39b]">$ stdin &gt;</span>
+          <div className="relative flex h-11 shrink-0 items-center border-t border-white/10 bg-[#111216] px-3.5">
+            <span className="mr-2 shrink-0 select-none text-[11px] font-extrabold uppercase tracking-wider text-[#9ed4aa]">$ stdin &gt;</span>
             <input
               className="w-full bg-transparent text-[13px] text-slate-300 placeholder-slate-600 outline-none"
               value={stdin}

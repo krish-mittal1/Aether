@@ -1005,30 +1005,30 @@ Keep it concise but useful. Do not rewrite the file.`
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Register custom flat sage theme
+    // Register custom VS Code-like graphite theme
     monaco.editor.defineTheme('aether-sage', {
       base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'comment', foreground: '5c7e8c', fontStyle: 'italic' },
-        { token: 'keyword', foreground: '8fb39b', fontStyle: 'bold' },
-        { token: 'string', foreground: 'f0b429' },
-        { token: 'number', foreground: 'ff7a64' },
-        { token: 'type', foreground: '00d8ff' },
-        { token: 'class', foreground: '00d8ff' },
-        { token: 'function', foreground: '38dec9' },
-        { token: 'operator', foreground: '8fb39b' }
+        { token: 'comment', foreground: '6f7782', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '8bbf96', fontStyle: 'bold' },
+        { token: 'string', foreground: 'd8b56d' },
+        { token: 'number', foreground: 'c98f77' },
+        { token: 'type', foreground: '8fb6d8' },
+        { token: 'class', foreground: '8fb6d8' },
+        { token: 'function', foreground: '98c7ad' },
+        { token: 'operator', foreground: 'b9c0ca' }
       ],
       colors: {
-        'editor.background': '#1f1f1f',
-        'editor.foreground': '#d4d4d4',
-        'editor.lineHighlightBackground': '#2a2a2a',
-        'editorLineNumber.foreground': '#858585',
-        'editorLineNumber.activeForeground': '#8fb39b',
-        'editor.selectionBackground': '#3a3d41',
-        'editorCursor.foreground': '#8fb39b',
-        'editorIndentGuide.background1': '#333333',
-        'editorIndentGuide.activeBackground1': '#555555',
+        'editor.background': '#1f2024',
+        'editor.foreground': '#d9dee7',
+        'editor.lineHighlightBackground': '#2a2c31',
+        'editorLineNumber.foreground': '#858b94',
+        'editorLineNumber.activeForeground': '#9ed4aa',
+        'editor.selectionBackground': '#3d424b',
+        'editorCursor.foreground': '#9ed4aa',
+        'editorIndentGuide.background1': '#33363c',
+        'editorIndentGuide.activeBackground1': '#606773',
       }
     });
 
@@ -1198,7 +1198,7 @@ Keep it concise but useful. Do not rewrite the file.`
 
         <button
           onClick={() => { setCommandOpen(false); setSearchOpen(true); setQuery(""); }}
-          className="group flex h-9 min-w-0 items-center justify-between rounded-md border border-white/10 bg-[#1b1f24] px-3.5 text-left text-[14px] text-slate-400 shadow-inner transition hover:border-white/20 hover:bg-[#22272e] hover:text-slate-200"
+          className="group flex h-9 min-w-0 items-center justify-between rounded-md border border-white/10 bg-[#24262b] px-3.5 text-left text-[14px] text-slate-400 shadow-inner transition hover:border-white/20 hover:bg-[#2d3036] hover:text-slate-200"
           title="Quick Open"
         >
           <span className="flex min-w-0 items-center gap-2">
@@ -1218,14 +1218,14 @@ Keep it concise but useful. Do not rewrite the file.`
           <button onClick={saveAllFiles} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] xl:inline-flex">
             <Download size={13} className="text-slate-400" /> Save All
           </button>
-          <button onClick={saveActiveFile} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#7aa884] px-4 text-[13px] font-semibold uppercase text-[#07110b] transition hover:bg-[#91bd98]">
+          <button onClick={saveActiveFile} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#6fb982] px-4 text-[13px] font-semibold uppercase text-[#07110b] transition hover:bg-[#84c792]">
             <Save size={13} /> Save
           </button>
         </div>
       </header>
 
       {/* Workspace body */}
-      <div className="flex min-h-0 overflow-hidden bg-[#0f1115]">
+      <div className="flex min-h-0 overflow-hidden bg-[#121316]">
         {/* Activity Bar */}
         {!zenMode && (
           <ActivityBar
@@ -1245,7 +1245,7 @@ Keep it concise but useful. Do not rewrite the file.`
             <div className="relative overflow-hidden border-r border-white/10 shadow-2xl shadow-black/20" style={{ height: "100%" }}>
               <FileExplorer files={files} activeFile={activeFile} onSelect={selectFile} onCreate={createFile} onImportFolder={importFolder} onDelete={deleteFile} onRename={renameFile} onMove={moveFile} localHandles={localHandles} />
               <div
-                className="absolute right-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#7aa884]/50"
+                className="absolute right-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#6fb982]/50"
                 onMouseDown={(event) => beginPanelResize("explorer", event)}
                 title="Drag to resize explorer"
               />
@@ -1253,10 +1253,10 @@ Keep it concise but useful. Do not rewrite the file.`
           )}
 
           {/* Editor column */}
-          <div className="flex min-w-0 flex-col min-h-0 overflow-hidden border-x border-white/10 bg-[#1f1f1f] shadow-2xl shadow-black/20">
+          <div className="flex min-w-0 flex-col min-h-0 overflow-hidden border-x border-white/10 bg-[#1f2024] shadow-2xl shadow-black/20">
             {/* VS Code style menu bar */}
             {!zenMode && (
-              <div className="flex h-[46px] shrink-0 items-center gap-3 overflow-hidden border-b border-white/10 bg-[#15191e] px-3">
+              <div className="flex h-[46px] shrink-0 items-center gap-3 overflow-hidden border-b border-white/10 bg-[#1b1d22] px-3">
                 <div className="scrollbar-thin flex min-w-0 flex-1 items-center gap-4 overflow-x-auto whitespace-nowrap pr-2 text-[14px] text-slate-200">
                   {["File", "Edit", "View", "Go", "Run", "Terminal", "Help"].map((item) => (
                     <button key={item} className="transition hover:text-white">{item}</button>
@@ -1277,7 +1277,7 @@ Keep it concise but useful. Do not rewrite the file.`
                   <button onClick={saveAllFiles} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
                     <RefreshCw size={14} /> Sync
                   </button>
-                  <button onClick={saveActiveFile} className="rounded bg-[#7aa884] px-2.5 py-1 text-[13px] font-semibold text-[#07110b] transition hover:bg-[#91bd98]">
+                  <button onClick={saveActiveFile} className="rounded bg-[#6fb982] px-2.5 py-1 text-[13px] font-semibold text-[#07110b] transition hover:bg-[#84c792]">
                     Save
                   </button>
                 </div>
@@ -1290,7 +1290,7 @@ Keep it concise but useful. Do not rewrite the file.`
 
             {/* Breadcrumb */}
             {activeFile && !zenMode && (
-              <div className="scrollbar-thin flex shrink-0 items-center gap-1 overflow-x-auto border-b border-white/10 bg-[#181c21] px-4 py-2 font-mono text-[12px] text-slate-500 select-none">
+              <div className="scrollbar-thin flex shrink-0 items-center gap-1 overflow-x-auto border-b border-white/10 bg-[#1a1c21] px-4 py-2 font-mono text-[12px] text-slate-500 select-none">
                 {breadcrumb.map((seg, i) => (
                   <span key={i} className="flex items-center gap-1 shrink-0">
                     {i > 0 && <ChevronRight size={8} className="text-slate-600" />}
@@ -1311,9 +1311,9 @@ Keep it concise but useful. Do not rewrite the file.`
                   <button key={fileId} className={`group relative flex h-10 min-w-36 shrink-0 items-center justify-between border-r border-slate-700/20 px-4 font-mono text-[13px] transition ${isActive ? "ide-tab-active font-semibold" : "text-slate-400 hover:bg-white/[0.035] hover:text-slate-100"}`}
                     onClick={() => selectFile(file)}
                     onContextMenu={(e) => { e.preventDefault(); setTabMenu({ x: e.clientX, y: e.clientY, fileId }); }}>
-                    {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#8fb39b]" />}
+                    {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#6fb982]" />}
                     <span className="truncate pr-2.5 flex items-center gap-1.5">
-                      {dirty && <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#8fb39b]" />}
+                      {dirty && <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#6fb982]" />}
                       {file.name}
                     </span>
                     <button onClick={(e) => { e.stopPropagation(); closeTab(fileId); }} className="rounded p-0.5 opacity-0 hover:bg-white/10 group-hover:opacity-100 transition">
@@ -1367,16 +1367,16 @@ Keep it concise but useful. Do not rewrite the file.`
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center bg-[#0b1015] p-8 text-center select-none">
-                  <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl border border-[#8fb39b]/15 bg-[#8fb39b]/5 text-[#b7c9bd] ">
+                  <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl border border-[#6fb982]/15 bg-[#6fb982]/5 text-[#b7c9bd] ">
                     <Code2Icon size={22} />
                   </span>
                   <h3 className="text-base font-black uppercase tracking-widest text-slate-200">Workspace Standby</h3>
                   <p className="mt-2 max-w-[300px] text-sm leading-relaxed text-slate-500">Select or create a file in the explorer to start coding.</p>
                   <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-slate-700/20 bg-black/20 p-5 text-left font-mono text-[10px] text-slate-500">
-                    <div className="flex justify-between gap-12"><span className="text-slate-600">Quick Open</span><span className="text-[#8fb39b]">Ctrl+P</span></div>
-                    <div className="flex justify-between gap-12"><span className="text-slate-600">Commands</span><span className="text-[#8fb39b]">Ctrl+Shift+P</span></div>
-                    <div className="flex justify-between gap-12"><span className="text-slate-600">Global Search</span><span className="text-[#8fb39b]">Ctrl+Shift+F</span></div>
-                    <div className="flex justify-between gap-12"><span className="text-slate-600">AI Assistant</span><span className="text-[#8fb39b]">Ctrl+I</span></div>
+                    <div className="flex justify-between gap-12"><span className="text-slate-600">Quick Open</span><span className="text-[#9ed4aa]">Ctrl+P</span></div>
+                    <div className="flex justify-between gap-12"><span className="text-slate-600">Commands</span><span className="text-[#9ed4aa]">Ctrl+Shift+P</span></div>
+                    <div className="flex justify-between gap-12"><span className="text-slate-600">Global Search</span><span className="text-[#9ed4aa]">Ctrl+Shift+F</span></div>
+                    <div className="flex justify-between gap-12"><span className="text-slate-600">AI Assistant</span><span className="text-[#9ed4aa]">Ctrl+I</span></div>
                   </div>
                 </div>
               )}
@@ -1386,7 +1386,7 @@ Keep it concise but useful. Do not rewrite the file.`
             {showTerminal && (
               <>
                 <div
-                  className="group flex h-2 shrink-0 cursor-row-resize items-center justify-center bg-[#060a0f] hover:bg-[#8fb39b]/5"
+                  className="group flex h-2 shrink-0 cursor-row-resize items-center justify-center bg-[#15171b] hover:bg-[#6fb982]/5"
                   onMouseDown={() => {
                     terminalResizeRef.current = true;
                     document.body.style.cursor = "row-resize";
@@ -1394,7 +1394,7 @@ Keep it concise but useful. Do not rewrite the file.`
                   }}
                   title="Drag to resize terminal"
                 >
-                  <span className="h-0.5 w-12 rounded-full bg-slate-700/60 transition group-hover:bg-[#8fb39b]/70" />
+                  <span className="h-0.5 w-12 rounded-full bg-slate-600/70 transition group-hover:bg-[#6fb982]/70" />
                 </div>
                 <OutputPanel activeFile={activeFile} output={output} running={running} stdin={stdin} onStdinChange={setStdin} onRun={runCode} onStop={stopRun} socket={socket} roomId={roomId} height={terminalHeight} />
               </>
@@ -1403,18 +1403,18 @@ Keep it concise but useful. Do not rewrite the file.`
 
           {/* Right rail: AI or Chat */}
           {rightPanelVisible && (
-            <div className="relative flex min-h-0 overflow-hidden border-l border-white/10 bg-[#171b20] shadow-2xl shadow-black/25">
+            <div className="relative flex min-h-0 overflow-hidden border-l border-white/10 bg-[#181a1f] shadow-2xl shadow-black/25">
               <div
-                className="absolute left-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#7aa884]/50"
+                className="absolute left-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#6fb982]/50"
                 onMouseDown={(event) => beginPanelResize("right", event)}
                 title="Drag to resize side panel"
               />
               {aiPanelOpen ? (
-                <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-[#171b20]">
+                <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-[#181a1f]">
                   <div className="flex shrink-0 items-center justify-between border-b border-slate-700/25 bg-white/[0.025] px-4 py-3">
                     <div className="min-w-0">
                       <h2 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-100">
-                        <Bot size={14} className="text-[#8fb39b]" /> Aether AI
+                        <Bot size={14} className="text-[#9ed4aa]" /> Aether AI
                       </h2>
                       <p className="mt-1 truncate font-mono text-[9px] text-slate-500">
                         {aiBusy ? "Thinking..." : aiLastModel ? `model: ${aiLastModel}` : "Tab accepts inline suggestions"}
@@ -1469,14 +1469,14 @@ Keep it concise but useful. Do not rewrite the file.`
                       <pre className="whitespace-pre-wrap rounded-2xl border border-red-500/20 bg-red-500/10 p-3 font-mono text-[11px] leading-relaxed text-red-200">{aiError}</pre>
                     ) : aiBusy ? (
                       <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#8fb39b] border-t-transparent" />
+                        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#6fb982] border-t-transparent" />
                         <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Aether AI is reading your workspace</p>
                       </div>
                     ) : aiResult ? (
                       <pre className="whitespace-pre-wrap rounded-2xl border border-slate-700/25 bg-black/25 p-4 font-mono text-[11px] leading-relaxed text-slate-200 shadow-inner">{aiResult}</pre>
                     ) : (
                       <div className="flex h-full flex-col justify-center gap-4 text-center text-slate-500">
-                        <Sparkles size={28} className="mx-auto text-[#8fb39b]/80" />
+                        <Sparkles size={28} className="mx-auto text-[#9ed4aa]/80" />
                         <div>
                           <p className="text-xs font-bold text-slate-300">AI help is docked beside your code.</p>
                           <p className="mt-2 text-[10px] leading-relaxed">Use Complete for cursor inserts, or Fix and Optimize for patches you can apply into the editor.</p>
@@ -1486,7 +1486,7 @@ Keep it concise but useful. Do not rewrite the file.`
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2 border-t border-slate-700/20 bg-black/15 p-3">
-                    <button disabled={!aiCanApply || !aiResult.trim()} onClick={applyAiResult} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#8fb39b]/30 bg-[#8fb39b]/10 px-3 text-[10px] font-black uppercase tracking-wider text-[#b7c9bd] transition hover:bg-[#8fb39b]/15 disabled:cursor-not-allowed disabled:opacity-40">
+                    <button disabled={!aiCanApply || !aiResult.trim()} onClick={applyAiResult} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#6fb982]/30 bg-[#6fb982]/10 px-3 text-[10px] font-black uppercase tracking-wider text-[#b7c9bd] transition hover:bg-[#6fb982]/15 disabled:cursor-not-allowed disabled:opacity-40">
                       <Wand2 size={12} /> Apply
                     </button>
                     <button disabled={!aiResult.trim()} onClick={sendAiResultToChat} className="ide-button inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-bold uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-40">
@@ -1509,9 +1509,9 @@ Keep it concise but useful. Do not rewrite the file.`
       {!zenMode && (
         <footer className="ide-status z-20 flex h-[28px] items-center justify-between px-4 font-mono text-[11px] text-slate-400 select-none">
           <span className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8fb39b]" />{users.length} Peer{users.length !== 1 ? "s" : ""}</span>
+            <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6fb982]" />{users.length} Peer{users.length !== 1 ? "s" : ""}</span>
             <span className="h-3 w-[1px] bg-line/60" />
-            <button className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase ${autoSave ? "border border-[#8fb39b]/20 bg-[#8fb39b]/10 text-[#b7c9bd]" : "border border-slate-700/30 bg-slate-900 text-slate-500"}`} onClick={() => setAutoSave(v => !v)}>Auto Save {autoSave ? "On" : "Off"}</button>
+            <button className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase ${autoSave ? "border border-[#6fb982]/20 bg-[#6fb982]/10 text-[#b7c9bd]" : "border border-slate-700/30 bg-slate-900 text-slate-500"}`} onClick={() => setAutoSave(v => !v)}>Auto Save {autoSave ? "On" : "Off"}</button>
             {localSyncStatus === "connected" && (
               <><span className="h-3 w-[1px] bg-line/60" /><span className="flex items-center gap-1 text-accent"><HardDrive size={10} />Synced: {localDirName}<button className="ml-1.5 hover:text-red-400 transition" onClick={disconnectLocalFolder}>(disconnect)</button></span></>
             )}
@@ -1526,7 +1526,7 @@ Keep it concise but useful. Do not rewrite the file.`
                 <span className="h-3 w-[1px] bg-line/60" />
                 <span>{indentSize} spaces</span>
                 <span className="h-3 w-[1px] bg-line/60" />
-                <span className="font-bold uppercase tracking-wider text-[#8fb39b]">{activeFile.language}</span>
+                <span className="font-bold uppercase tracking-wider text-[#9ed4aa]">{activeFile.language}</span>
               </>
             )}
           </span>
@@ -1534,9 +1534,9 @@ Keep it concise but useful. Do not rewrite the file.`
       )}
 
       {/* Floating neon "1 Issue" badge at bottom-left */}
-      <div className="fixed bottom-10 left-4 z-50 flex items-center gap-2 rounded-full border border-[#8fb39b] bg-[#070b10] px-3.5 py-1.5 ">
+      <div className="fixed bottom-10 left-4 z-50 flex items-center gap-2 rounded-full border border-[#6fb982] bg-[#17181c] px-3.5 py-1.5 ">
         <span className="flex h-2 w-2 relative">
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#8fb39b]"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#6fb982]"></span>
         </span>
         <span className="font-mono text-[10px] font-bold text-[#b7c9bd] tracking-wider">1 ISSUE</span>
       </div>
@@ -1546,7 +1546,7 @@ Keep it concise but useful. Do not rewrite the file.`
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-20 backdrop-blur-sm" onClick={() => setSearchOpen(false)}>
           <div className="glass-card w-[520px] rounded-2xl p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 border-b border-slate-700/20 pb-3">
-              <Search size={14} className="text-[#8fb39b]" />
+              <Search size={14} className="text-[#9ed4aa]" />
               <input
                 autoFocus
                 type="text"
@@ -1561,7 +1561,7 @@ Keep it concise but useful. Do not rewrite the file.`
                 <button
                   key={file.id}
                   onClick={() => { selectFile(file); setSearchOpen(false); }}
-                  className="flex w-full flex-col gap-1 rounded-xl p-2.5 text-left transition hover:bg-[#8fb39b]/10 hover:text-[#8fb39b]"
+                  className="flex w-full flex-col gap-1 rounded-xl p-2.5 text-left transition hover:bg-[#6fb982]/10 hover:text-[#9ed4aa]"
                 >
                   <span className="font-mono text-xs">{file.name}</span>
                   <span className="font-mono text-[9px] text-slate-500">{path}</span>
@@ -1578,7 +1578,7 @@ Keep it concise but useful. Do not rewrite the file.`
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-20 backdrop-blur-sm" onClick={() => setCommandOpen(false)}>
           <div className="glass-card w-[520px] rounded-2xl p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 border-b border-slate-700/20 pb-3">
-              <Command size={14} className="text-[#8fb39b]" />
+              <Command size={14} className="text-[#9ed4aa]" />
               <input
                 autoFocus
                 type="text"
@@ -1593,7 +1593,7 @@ Keep it concise but useful. Do not rewrite the file.`
                 <button
                   key={i}
                   onClick={() => { action(); setCommandOpen(false); }}
-                  className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left font-mono text-xs text-slate-300 transition hover:bg-[#8fb39b]/10 hover:text-[#8fb39b]"
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left font-mono text-xs text-slate-300 transition hover:bg-[#6fb982]/10 hover:text-[#9ed4aa]"
                 >
                   <span>{name}</span>
                 </button>
@@ -1608,10 +1608,10 @@ Keep it concise but useful. Do not rewrite the file.`
       {shortcutsOpen && <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />}
       
       {tabMenu && (
-        <div className="fixed z-50 w-44 rounded-xl border border-slate-700/20 bg-[#070b10] p-1 shadow-2xl" style={{ top: tabMenu.y, left: tabMenu.x }} onMouseLeave={() => setTabMenu(null)}>
-          <button onClick={() => { closeTab(tabMenu.fileId); setTabMenu(null); }} className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-300 hover:bg-[#8fb39b]/10 hover:text-[#8fb39b]">Close Tab</button>
-          <button onClick={() => { setOpenTabs((tabs) => tabs.filter((id) => id === tabMenu.fileId)); setActiveFile(files.find((f) => f.id === tabMenu.fileId)); setTabMenu(null); }} className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-300 hover:bg-[#8fb39b]/10 hover:text-[#8fb39b]">Close Other Tabs</button>
-          <button onClick={() => { setOpenTabs([]); setActiveFile(null); setTabMenu(null); }} className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-300 hover:bg-[#8fb39b]/10 hover:text-[#8fb39b]">Close All Tabs</button>
+        <div className="fixed z-50 w-44 rounded-xl border border-white/10 bg-[#1b1d22] p-1 shadow-2xl" style={{ top: tabMenu.y, left: tabMenu.x }} onMouseLeave={() => setTabMenu(null)}>
+          <button onClick={() => { closeTab(tabMenu.fileId); setTabMenu(null); }} className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-300 hover:bg-[#6fb982]/10 hover:text-[#9ed4aa]">Close Tab</button>
+          <button onClick={() => { setOpenTabs((tabs) => tabs.filter((id) => id === tabMenu.fileId)); setActiveFile(files.find((f) => f.id === tabMenu.fileId)); setTabMenu(null); }} className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-300 hover:bg-[#6fb982]/10 hover:text-[#9ed4aa]">Close Other Tabs</button>
+          <button onClick={() => { setOpenTabs([]); setActiveFile(null); setTabMenu(null); }} className="flex w-full items-center rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-300 hover:bg-[#6fb982]/10 hover:text-[#9ed4aa]">Close All Tabs</button>
         </div>
       )}
     </main>

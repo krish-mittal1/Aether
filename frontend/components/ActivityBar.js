@@ -51,17 +51,17 @@ export function ActivityBar({
               title={label}
               className={`group relative flex h-11 w-11 items-center justify-center rounded-xl transition duration-150 ${
                 isActive
-                  ? "text-[#8fb39b] drop-"
+                  ? "bg-[#6fb982]/10 text-[#9ed4aa]"
                   : "text-slate-500 hover:bg-white/[0.045] hover:text-slate-200"
               }`}
             >
               {/* Active indicator bar */}
               {isActive && (
-                <span className="absolute left-0 h-6 w-[3px] rounded-r bg-[#8fb39b] " />
+                <span className="absolute left-0 h-6 w-[3px] rounded-r bg-[#6fb982] " />
               )}
               <Icon size={18} />
               {badge != null && badge > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#8fb39b] text-[8px] font-black text-slate-950 ">
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#6fb982] text-[8px] font-black text-slate-950 ">
                   {badge > 9 ? "9+" : badge}
                 </span>
               )}
