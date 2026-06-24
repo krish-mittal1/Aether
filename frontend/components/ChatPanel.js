@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Send, Users, Wifi } from "lucide-react";
+import { MessageSquare, Mic, Send, Users, Wifi } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 
@@ -19,7 +19,7 @@ function formatTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export function ChatPanel({ messages, users, typingUsers, onSend }) {
+export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
   const [content, setContent] = useState("");
   const [tab, setTab] = useState("chat");
   const bottomRef = useRef(null);
@@ -52,6 +52,7 @@ export function ChatPanel({ messages, users, typingUsers, onSend }) {
         {[
           { id: "chat", Icon: MessageSquare, label: "CHAT" },
           { id: "peers", Icon: Users, label: `PEERS (${Math.max(1, users.length)})` },
+          { id: "voice", Icon: Mic, label: "VOICE" },
         ].map(({ id, Icon, label }) => (
           <button
             key={id}
@@ -154,6 +155,19 @@ export function ChatPanel({ messages, users, typingUsers, onSend }) {
             </button>
           </form>
         </>
+      )}
+
+      {tab === "voice" && (
+        <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
+          {voiceSlot || (
+            <div className="flex flex-col items-center justify-center gap-3 pt-16 text-center px-4">
+              <Mic size={24} className="text-slate-600" />
+              <p className="text-xs leading-relaxed text-slate-500">
+                Voice chat is not available.<br />Open the Chat panel to use it.
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       {tab === "peers" && (

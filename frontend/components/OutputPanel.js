@@ -145,28 +145,40 @@ export function OutputPanel({
     };
   }, [socket, roomId, activeTab]);
 
-  // Handle "Run File in Terminal" (types execution command dynamically)
+  function buildRunCommand(language, name, content) {
+    if (language === "python") return `python3 ${name}`;
+    if (language === "javascript") return `node ${name}`;
+    if (language === "typescript") return `npx ts-node ${name}`;
+    if (language === "cpp") return `g++ -O2 ${name} -o main && ./main`;
+    if (language === "java") {
+      const match = (content || "").match(/public\s+class\s+(\w+)/);
+      return `javac ${name} && java ${match ? match[1] : "Main"}`;
+    }
+    return "";
+  }
+
+  // Run single active file in terminal
   function handleRunInTerminal() {
     if (!socket || !activeFile) return;
-    
-    // Resolve basic relative path based on name (root level)
+    const cmd = buildRunCommand(activeFile.language, activeFile.name, activeFile.content);
+    if (cmd) socket.emit("terminal_input", { data: `${cmd}\r` });
+  }
+
+  // Run whole project: wildcard compilation where possible
+  function handleRunProject() {
+    if (!socket || !activeFile) return;
+    const lang = activeFile.language;
     const name = activeFile.name;
     let cmd = "";
-    
-    if (activeFile.language === "python") cmd = `python3 ${name}`;
-    else if (activeFile.language === "javascript") cmd = `node ${name}`;
-    else if (activeFile.language === "typescript") cmd = `npx ts-node ${name}`;
-    else if (activeFile.language === "cpp") cmd = `g++ -O2 ${name} -o main && ./main`;
-    else if (activeFile.language === "java") {
-      const match = activeFile.content.match(/public\s+class\s+(\w+)/);
-      const className = match ? match[1] : "Main";
-      cmd = `javac ${name} && java ${className}`;
+    if (lang === "python") cmd = `python3 ${name}`;
+    else if (lang === "javascript") cmd = `node ${name}`;
+    else if (lang === "typescript") cmd = `npx ts-node ${name}`;
+    else if (lang === "cpp") cmd = `g++ -O2 *.cpp -o app 2>&1 && ./app`;
+    else if (lang === "java") {
+      const match = (activeFile.content || "").match(/public\s+class\s+(\w+)/);
+      cmd = `javac *.java && java ${match ? match[1] : "Main"}`;
     }
-    
-    if (cmd) {
-      // Send Ctrl+C to cancel any active command, then write execution command with carriage return
-      socket.emit("terminal_input", { data: `\u0003${cmd}\r` });
-    }
+    if (cmd) socket.emit("terminal_input", { data: `${cmd}\r` });
   }
 
   function clearTerminal() {
@@ -216,12 +228,21 @@ export function OutputPanel({
               >
                 <Trash2 size={11} />
               </button>
-              <button 
+              <button
                 disabled={!canRun}
                 onClick={handleRunInTerminal}
                 className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#6fb982] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/10 disabled:cursor-not-allowed disabled:opacity-30"
+                title="Run active file"
               >
-                <Play size={8} className="fill-current text-[#9ed4aa]" /> RUN CODE
+                <Play size={8} className="fill-current text-[#9ed4aa]" /> Run File
+              </button>
+              <button
+                disabled={!canRun}
+                onClick={handleRunProject}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-600 bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-slate-400 transition hover:border-[#6fb982]/60 hover:text-[#9ed4aa] disabled:cursor-not-allowed disabled:opacity-30"
+                title="Run project (compiles all files)"
+              >
+                <Play size={8} className="fill-current" /> Run Project
               </button>
             </>
           ) : (

@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  BookOpen,
+  Eye,
   FileText,
   GitBranch,
   Keyboard,
@@ -17,6 +19,9 @@ const ITEMS = [
   { id: "chat", Icon: MessageSquare, label: "Chat (Ctrl+Shift+Y)" },
   { id: "users", Icon: Users, label: "Collaborators" },
   { id: "terminal", Icon: Terminal, label: "Terminal (Ctrl+J)" },
+  { id: "preview", Icon: Eye, label: "Live Preview" },
+  { id: "git", Icon: GitBranch, label: "Git" },
+  { id: "notebook", Icon: BookOpen, label: "Notebook Mode" },
 ];
 
 const BOTTOM_ITEMS = [

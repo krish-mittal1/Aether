@@ -10,7 +10,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { ChatPanel } from "../../../components/ChatPanel";
 import { FileExplorer, inferLanguage } from "../../../components/FileExplorer";
+import { GitPanel } from "../../../components/GitPanel";
+import { LivePreview } from "../../../components/LivePreview";
+import { NotebookView } from "../../../components/NotebookView";
 import { OutputPanel } from "../../../components/OutputPanel";
+import { VoiceChat } from "../../../components/VoiceChat";
 import { useRequireAuth } from "../../../hooks/useRequireAuth";
 import { api, apiLong } from "../../../lib/api";
 import { clearRoomDirHandle, loadRoomDirHandle, saveRoomDirHandle, verifyPermission, walkDirectory } from "../../../lib/localFS";
@@ -100,6 +104,12 @@ export default function RoomPage() {
   const [aiCanApply, setAiCanApply] = useState(false);
   const [aiLastModel, setAiLastModel] = useState("");
   const [inlineAiEnabled, setInlineAiEnabled] = useState(true);
+  // Advanced feature states
+  const [showPreview, setShowPreview] = useState(false);
+  const [showGit, setShowGit] = useState(false);
+  const [showNotebook, setShowNotebook] = useState(false);
+  const [aiFullContext, setAiFullContext] = useState(false);
+  const [aiDiffMode, setAiDiffMode] = useState(false);
 
   const activeFileRef = useRef(activeFile);
   useEffect(() => { activeFileRef.current = activeFile; }, [activeFile]);
@@ -707,13 +717,29 @@ export default function RoomPage() {
       const status = dirtyFiles[file.id] ? "dirty" : "saved";
       return `${file.type}: ${path}${file.type === "file" ? ` [${file.language || inferLanguage(file.name)}; ${status}]` : ""}`;
     });
-    return [
+    const base = [
       `Room: ${room?.name || roomId}`,
       `Active: ${activeFile ? workspacePaths[activeFile.id] || activeFile.name : "none"}`,
       `Open tabs: ${openTabs.map((id) => workspacePaths[id] || files.find((f) => f.id === id)?.name).filter(Boolean).join(", ") || "none"}`,
       "Workspace tree:",
       ...visibleFiles,
-    ].join("\n");
+    ];
+    // When full context is on, include content of open tab files (capped at 40k chars total)
+    if (aiFullContext) {
+      let budget = 40_000;
+      const contentLines = ["", "--- File Contents ---"];
+      for (const fileId of openTabs.slice(0, 8)) {
+        const f = files.find((x) => x.id === fileId);
+        if (!f || f.type !== "file" || !f.content) continue;
+        const path = workspacePaths[f.id] || f.name;
+        const snippet = f.content.slice(0, Math.min(budget, 8000));
+        budget -= snippet.length;
+        contentLines.push(`\n// ${path}\n${snippet}`);
+        if (budget <= 0) break;
+      }
+      if (contentLines.length > 2) base.push(...contentLines);
+    }
+    return base.join("\n");
   }
 
   function buildInlineAiContext(file) {
@@ -1084,6 +1110,22 @@ Keep it concise but useful. Do not rewrite the file.`
     else if (id === "chat") { setShowChat(v => !v); setActiveActivityPanel(id); }
     else if (id === "terminal") { setShowTerminal(v => !v); setActiveActivityPanel(id); }
     else if (id === "users") { setShowChat(true); setActiveActivityPanel(id); }
+    else if (id === "preview") {
+      const next = !showPreview;
+      setShowPreview(next);
+      if (next) { setShowGit(false); setShowNotebook(false); setAiPanelOpen(false); setShowChat(false); }
+      setActiveActivityPanel(id);
+    }
+    else if (id === "git") {
+      const next = !showGit;
+      setShowGit(next);
+      if (next) { setShowPreview(false); setShowNotebook(false); setAiPanelOpen(false); setShowChat(false); }
+      setActiveActivityPanel(id);
+    }
+    else if (id === "notebook") {
+      setShowNotebook(v => !v);
+      setActiveActivityPanel(id);
+    }
   }
 
   function getJsSnippets(monaco, range) {
@@ -1125,9 +1167,13 @@ Keep it concise but useful. Do not rewrite the file.`
     ["AI: Review File", () => runWorkspaceAi("review")],
     ["Open Local Folder", openFolderWithFileSystemAccess],
     ["Toggle Explorer (Ctrl+B)", () => setShowExplorer(v => !v)],
-    ["Toggle Explorer (Ctrl+B)", () => setShowExplorer(v => !v)],
     ["Toggle Terminal (Ctrl+J)", () => setShowTerminal(v => !v)],
     ["Toggle Chat (Ctrl+Shift+Y)", () => setShowChat(v => !v)],
+    ["Toggle Live Preview", () => handleActivityPanel("preview")],
+    ["Toggle Git Panel", () => handleActivityPanel("git")],
+    ["Toggle Notebook Mode", () => setShowNotebook(v => !v)],
+    ["AI: Toggle Full Context Mode", () => setAiFullContext(v => !v)],
+    ["AI: Toggle Diff View", () => setAiDiffMode(v => !v)],
     ["Toggle Zen Mode", () => setZenMode(v => !v)],
     ["Keyboard Shortcuts", () => setShortcutsOpen(true)],
     ["Toggle Word Wrap", () => setWordWrap(v => !v)],
@@ -1170,7 +1216,7 @@ Keep it concise but useful. Do not rewrite the file.`
     </div>
   );
 
-  const rightPanelVisible = !zenMode && (aiPanelOpen || showChat);
+  const rightPanelVisible = !zenMode && (aiPanelOpen || showChat || showPreview || showGit);
   const colLayout = [showExplorer && !zenMode && `${explorerWidth}px`, "minmax(0,1fr)", rightPanelVisible && `${rightPanelWidth}px`].filter(Boolean).join(" ");
 
   return (
@@ -1271,8 +1317,8 @@ Keep it concise but useful. Do not rewrite the file.`
                   <button onClick={() => setInlineAiEnabled((enabled) => !enabled)} className={`flex items-center gap-1.5 transition ${inlineAiEnabled ? "text-slate-100" : "text-slate-500"}`}>
                     <Wand2 size={14} /> Inline AI
                   </button>
-                  <button onClick={() => toast.success("Commit panel coming soon")} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
-                    <GitBranch size={14} /> Commit
+                  <button onClick={() => handleActivityPanel("git")} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
+                    <GitBranch size={14} /> Git
                   </button>
                   <button onClick={saveAllFiles} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
                     <RefreshCw size={14} /> Sync
@@ -1324,9 +1370,16 @@ Keep it concise but useful. Do not rewrite the file.`
               }) : <span className="px-4 text-slate-500 italic font-mono text-[10px]">No active buffers</span>}
             </div>
 
-            {/* Monaco */}
+            {/* Editor or Notebook */}
             <div className="ide-editor-frame flex-1 min-h-0">
-              {activeFile ? (
+              {showNotebook && activeFile ? (
+                <NotebookView
+                  activeFile={activeFile}
+                  onContentChange={(content) => {
+                    updateContent(content);
+                  }}
+                />
+              ) : activeFile ? (
                 <MonacoEditor
                   key={activeFile.id}
                   height="100%"
@@ -1409,7 +1462,11 @@ Keep it concise but useful. Do not rewrite the file.`
                 onMouseDown={(event) => beginPanelResize("right", event)}
                 title="Drag to resize side panel"
               />
-              {aiPanelOpen ? (
+              {showPreview ? (
+                <LivePreview activeFile={activeFile} files={files} className="w-full" />
+              ) : showGit ? (
+                <GitPanel roomId={roomId} socket={socket} />
+              ) : aiPanelOpen ? (
                 <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-[#181a1f]">
                   <div className="flex shrink-0 items-center justify-between border-b border-slate-700/25 bg-white/[0.025] px-4 py-3">
                     <div className="min-w-0">
@@ -1462,6 +1519,27 @@ Keep it concise but useful. Do not rewrite the file.`
                         </button>
                       )}
                     </div>
+                    {/* AI Options row */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={() => setAiFullContext(v => !v)}
+                        title="Include full file contents in AI context (better answers, slower)"
+                        className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold uppercase tracking-wide transition ${
+                          aiFullContext ? "border border-[#6fb982]/30 bg-[#6fb982]/10 text-[#9ed4aa]" : "border border-white/10 text-slate-500 hover:text-slate-300"
+                        }`}
+                      >
+                        <FileCode2 size={9} /> Full Context
+                      </button>
+                      <button
+                        onClick={() => setAiDiffMode(v => !v)}
+                        title="Show diff view for fix/optimize/refactor results"
+                        className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold uppercase tracking-wide transition ${
+                          aiDiffMode ? "border border-[#6fb982]/30 bg-[#6fb982]/10 text-[#9ed4aa]" : "border border-white/10 text-slate-500 hover:text-slate-300"
+                        }`}
+                      >
+                        <GitBranch size={9} /> Diff View
+                      </button>
+                    </div>
                   </div>
 
                   <div className="scrollbar-thin min-h-0 flex-1 overflow-auto p-3">
@@ -1472,6 +1550,17 @@ Keep it concise but useful. Do not rewrite the file.`
                         <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#6fb982] border-t-transparent" />
                         <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Aether AI is reading your workspace</p>
                       </div>
+                    ) : aiResult && aiDiffMode && ["fix", "optimize", "refactor"].includes(aiMode) ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2 text-[9px] uppercase tracking-wider text-slate-500">
+                          <span className="flex-1 rounded bg-red-500/10 px-2 py-1 text-red-400">Original</span>
+                          <span className="flex-1 rounded bg-green-500/10 px-2 py-1 text-green-400">AI Result</span>
+                        </div>
+                        <div className="flex gap-2 min-h-0">
+                          <pre className="flex-1 overflow-auto rounded-xl border border-red-500/15 bg-red-500/5 p-3 font-mono text-[10px] leading-relaxed text-slate-400">{activeFile?.content || ""}</pre>
+                          <pre className="flex-1 overflow-auto rounded-xl border border-green-500/15 bg-green-500/5 p-3 font-mono text-[10px] leading-relaxed text-slate-200">{aiResult}</pre>
+                        </div>
+                      </div>
                     ) : aiResult ? (
                       <pre className="whitespace-pre-wrap rounded-2xl border border-slate-700/25 bg-black/25 p-4 font-mono text-[11px] leading-relaxed text-slate-200 shadow-inner">{aiResult}</pre>
                     ) : (
@@ -1479,7 +1568,7 @@ Keep it concise but useful. Do not rewrite the file.`
                         <Sparkles size={28} className="mx-auto text-[#9ed4aa]/80" />
                         <div>
                           <p className="text-xs font-bold text-slate-300">AI help is docked beside your code.</p>
-                          <p className="mt-2 text-[10px] leading-relaxed">Use Complete for cursor inserts, or Fix and Optimize for patches you can apply into the editor.</p>
+                          <p className="mt-2 text-[10px] leading-relaxed">Use Complete for cursor inserts, or Fix and Optimize for patches you can apply. Enable Diff View to compare changes side by side.</p>
                         </div>
                       </div>
                     )}
@@ -1498,7 +1587,19 @@ Keep it concise but useful. Do not rewrite the file.`
                   </div>
                 </aside>
               ) : (
-                <ChatPanel messages={messages} users={users} typingUsers={typingUsers} onSend={sendMessage} />
+                <ChatPanel
+                  messages={messages}
+                  users={users}
+                  typingUsers={typingUsers}
+                  onSend={sendMessage}
+                  voiceSlot={
+                    <VoiceChat
+                      socket={socket}
+                      roomId={roomId}
+                      currentUser={user}
+                    />
+                  }
+                />
               )}
             </div>
           )}

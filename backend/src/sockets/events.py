@@ -322,3 +322,73 @@ async def terminal_resize(sid, data):
     rows = data.get("rows", 24)
     terminal_manager.resize_session(sid, cols, rows)
 
+
+# ─── WebRTC Voice Chat Signaling ────────────────────────────────────────────
+
+@sio.on("voice_join")
+async def voice_join(sid, data):
+    """Broadcast to room that this peer is joining voice."""
+    session = await sio.get_session(sid)
+    room_id = data.get("roomId")
+    if not room_id:
+        return
+    await sio.emit(
+        "voice_joined",
+        {"sid": sid, "user": session["user"]},
+        room=room_id,
+        skip_sid=sid,
+    )
+
+
+@sio.on("voice_leave")
+async def voice_leave(sid, data):
+    """Broadcast to room that this peer is leaving voice."""
+    session = await sio.get_session(sid)
+    room_id = data.get("roomId")
+    if not room_id:
+        return
+    await sio.emit(
+        "voice_left",
+        {"sid": sid, "user": session["user"]},
+        room=room_id,
+        skip_sid=sid,
+    )
+
+
+@sio.on("webrtc_offer")
+async def webrtc_offer(sid, data):
+    """Forward an SDP offer to a specific peer."""
+    session = await sio.get_session(sid)
+    target_sid = data.get("targetSid")
+    if target_sid:
+        await sio.emit(
+            "webrtc_offer",
+            {"offer": data.get("offer"), "fromSid": sid, "fromUser": session["user"]},
+            to=target_sid,
+        )
+
+
+@sio.on("webrtc_answer")
+async def webrtc_answer(sid, data):
+    """Forward an SDP answer back to the offering peer."""
+    session = await sio.get_session(sid)
+    target_sid = data.get("targetSid")
+    if target_sid:
+        await sio.emit(
+            "webrtc_answer",
+            {"answer": data.get("answer"), "fromSid": sid, "fromUser": session["user"]},
+            to=target_sid,
+        )
+
+
+@sio.on("webrtc_ice_candidate")
+async def webrtc_ice_candidate(sid, data):
+    """Forward an ICE candidate to a specific peer."""
+    target_sid = data.get("targetSid")
+    if target_sid:
+        await sio.emit(
+            "webrtc_ice_candidate",
+            {"candidate": data.get("candidate"), "fromSid": sid},
+            to=target_sid,
+        )
+
