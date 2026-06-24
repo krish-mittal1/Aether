@@ -13,14 +13,16 @@ logger = logging.getLogger("terminal-service")
 
 WORKSPACE_ROOT = Path("/tmp/collab-workspaces")
 
+
 class TerminalSession:
-    def __init__(self, sid: str, room_id: str, sio_server, cols: int = 80, rows: int = 24):
+    def __init__(self, sid: str, term_id: str, room_id: str, sio_server, cols: int = 80, rows: int = 24):
         self.sid = sid
+        self.term_id = term_id
         self.room_id = room_id
         self.sio = sio_server
         self.cols = cols
         self.rows = rows
-        
+
         self.master_fd = None
         self.slave_fd = None
         self.process = None
@@ -28,26 +30,20 @@ class TerminalSession:
         self.loop = asyncio.get_running_loop()
 
     async def start(self):
-        # Resolve workspace directory
         workspace_dir = WORKSPACE_ROOT / self.room_id
         os.makedirs(workspace_dir, exist_ok=True)
-        
-        # Create PTY
+
         self.master_fd, self.slave_fd = pty.openpty()
-        
-        # Set size
         self.resize(self.cols, self.rows)
-        
-        # Set environment variables
+
         env = os.environ.copy()
         env["TERM"] = "xterm-256color"
+        env["COLORTERM"] = "truecolor"
         env["HOME"] = str(workspace_dir)
         env["PWD"] = str(workspace_dir)
-        
-        # We prefer bash, fallback to sh
+
         shell = "/bin/bash" if os.path.exists("/bin/bash") else "/bin/sh"
-        
-        # Spawn process
+
         self.process = subprocess.Popen(
             [shell],
             stdin=self.slave_fd,
@@ -56,30 +52,30 @@ class TerminalSession:
             cwd=str(workspace_dir),
             env=env,
             preexec_fn=os.setsid,
-            close_fds=True
+            close_fds=True,
         )
-        
-        # Close slave fd in parent process as we only use master fd
+
         os.close(self.slave_fd)
         self.slave_fd = None
-        
-        # Start reading output
-        self.read_task = asyncio.create_task(self._read_output_loop())
-        logger.info(f"Started terminal process for sid={self.sid} in room={self.room_id}")
 
-    async def _read_output_loop(self):
+        self.read_task = asyncio.create_task(self._read_loop())
+        logger.info("Terminal started sid=%s termId=%s room=%s", self.sid, self.term_id, self.room_id)
+
+    async def _read_loop(self):
         try:
             while self.process and self.process.poll() is None:
-                # Use executor to read from the master fd without blocking the event loop
                 data = await self.loop.run_in_executor(None, self._read_fd)
                 if not data:
                     break
-                # Emit output to client
-                await self.sio.emit("terminal_output", {"data": data.decode("utf-8", errors="replace")}, to=self.sid)
+                await self.sio.emit(
+                    "terminal_output",
+                    {"data": data.decode("utf-8", errors="replace"), "termId": self.term_id},
+                    to=self.sid,
+                )
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            logger.error(f"Error reading from terminal master fd: {e}")
+            logger.error("Terminal read error sid=%s termId=%s: %s", self.sid, self.term_id, e)
         finally:
             await self.stop()
 
@@ -101,22 +97,20 @@ class TerminalSession:
         self.rows = rows
         if self.master_fd is not None:
             try:
-                # Set terminal size using ioctl
                 size = struct.pack("HHHH", rows, cols, 0, 0)
                 fcntl.ioctl(self.master_fd, termios.TIOCSWINSZ, size)
             except Exception as e:
-                logger.error(f"Failed to resize terminal master fd: {e}")
+                logger.error("Terminal resize failed: %s", e)
 
     async def stop(self):
         if self.read_task:
             self.read_task.cancel()
             self.read_task = None
-            
+
         if self.process:
             if self.process.poll() is None:
                 try:
                     self.process.terminate()
-                    # Wait briefly for process to terminate
                     for _ in range(10):
                         if self.process.poll() is not None:
                             break
@@ -126,44 +120,61 @@ class TerminalSession:
                 except Exception:
                     pass
             self.process = None
-            
+
         if self.master_fd is not None:
             try:
                 os.close(self.master_fd)
             except OSError:
                 pass
             self.master_fd = None
-            
-        # Emit a closed event to the client
-        await self.sio.emit("terminal_closed", {}, to=self.sid)
-        logger.info(f"Stopped terminal process for sid={self.sid}")
+
+        try:
+            await self.sio.emit("terminal_closed", {"termId": self.term_id}, to=self.sid)
+        except Exception:
+            pass
+        logger.info("Terminal stopped sid=%s termId=%s", self.sid, self.term_id)
+
 
 class TerminalManager:
     def __init__(self, sio_server):
         self.sio = sio_server
         self.sessions: Dict[str, TerminalSession] = {}
 
-    async def create_session(self, sid: str, room_id: str, cols: int = 80, rows: int = 24) -> TerminalSession:
-        await self.close_session(sid)
-        session = TerminalSession(sid, room_id, self.sio, cols, rows)
-        self.sessions[sid] = session
+    def _key(self, sid: str, term_id: str) -> str:
+        return f"{sid}:{term_id}"
+
+    async def create_session(self, sid: str, term_id: str, room_id: str, cols: int = 80, rows: int = 24) -> TerminalSession:
+        key = self._key(sid, term_id)
+        await self._close_key(key)
+        session = TerminalSession(sid, term_id, room_id, self.sio, cols, rows)
+        self.sessions[key] = session
         await session.start()
         return session
 
-    async def write_to_session(self, sid: str, data: str):
-        session = self.sessions.get(sid)
+    async def write_to_session(self, sid: str, term_id: str, data: str):
+        session = self.sessions.get(self._key(sid, term_id))
         if session:
             await session.write(data)
 
-    def resize_session(self, sid: str, cols: int, rows: int):
-        session = self.sessions.get(sid)
+    def resize_session(self, sid: str, term_id: str, cols: int, rows: int):
+        session = self.sessions.get(self._key(sid, term_id))
         if session:
             session.resize(cols, rows)
 
-    async def close_session(self, sid: str):
-        session = self.sessions.pop(sid, None)
+    async def close_session(self, sid: str, term_id: str):
+        await self._close_key(self._key(sid, term_id))
+
+    async def close_all_for_sid(self, sid: str):
+        prefix = f"{sid}:"
+        keys = [k for k in list(self.sessions) if k.startswith(prefix)]
+        for key in keys:
+            await self._close_key(key)
+
+    async def _close_key(self, key: str):
+        session = self.sessions.pop(key, None)
         if session:
             await session.stop()
 
-# Global terminal manager placeholder, initialized in main/events
+
+# Initialized in events.py
 terminal_manager = None

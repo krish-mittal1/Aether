@@ -67,7 +67,7 @@ async def connect(sid, environ, auth):
 
 @sio.event
 async def disconnect(sid):
-    await terminal_manager.close_session(sid)
+    await terminal_manager.close_all_for_sid(sid)
     stored = await presence.socket_user(sid)
     if stored:
         room_id = stored["roomId"]
@@ -294,6 +294,7 @@ async def file_tree_refresh(sid, data):
 @sio.on("terminal_init")
 async def terminal_init(sid, data):
     room_id = data.get("roomId")
+    term_id = data.get("termId", "t1")
     cols = data.get("cols", 80)
     rows = data.get("rows", 24)
     if not room_id:
@@ -301,26 +302,32 @@ async def terminal_init(sid, data):
     session = await sio.get_session(sid)
     if not await ensure_socket_member(sid, room_id, session["user"]["id"]):
         return
-    # Ensure workspace directory and files are updated
     try:
         await sync_all_files_to_disk(room_id)
     except Exception as e:
         logger.error(f"Failed to sync workspace to disk for terminal session: {e}")
-    # Spawn a shell session
-    await terminal_manager.create_session(sid, room_id, cols, rows)
+    await terminal_manager.create_session(sid, term_id, room_id, cols, rows)
 
 
 @sio.on("terminal_input")
 async def terminal_input(sid, data):
     val = data.get("data", "")
-    await terminal_manager.write_to_session(sid, val)
+    term_id = data.get("termId", "t1")
+    await terminal_manager.write_to_session(sid, term_id, val)
 
 
 @sio.on("terminal_resize")
 async def terminal_resize(sid, data):
+    term_id = data.get("termId", "t1")
     cols = data.get("cols", 80)
     rows = data.get("rows", 24)
-    terminal_manager.resize_session(sid, cols, rows)
+    terminal_manager.resize_session(sid, term_id, cols, rows)
+
+
+@sio.on("terminal_kill")
+async def terminal_kill(sid, data):
+    term_id = data.get("termId", "t1")
+    await terminal_manager.close_session(sid, term_id)
 
 
 # ─── WebRTC Voice Chat Signaling ────────────────────────────────────────────

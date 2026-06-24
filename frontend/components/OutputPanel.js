@@ -1,323 +1,434 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play, Square, Terminal, Cpu, X, Maximize2, Trash2 } from "lucide-react";
+import { ChevronRight, Minus, Play, Plus, Search, Square, Terminal as TermIcon, Trash2, X } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
-export function OutputPanel({ 
-  activeFile, 
-  output, 
-  running, 
-  stdin, 
-  onStdinChange, 
-  onRun, 
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+let _uid = 1;
+function genId() { return `t${_uid++}`; }
+function makeTab(n) { const id = genId(); return { id, name: `bash ${n}` }; }
+
+function buildRunCmd(language, name, content) {
+  if (language === "python")     return `python3 ${name}`;
+  if (language === "javascript") return `node ${name}`;
+  if (language === "typescript") return `npx ts-node ${name}`;
+  if (language === "cpp")        return `g++ -O2 ${name} -o _main && ./_main`;
+  if (language === "java") {
+    const m = (content || "").match(/public\s+class\s+(\w+)/);
+    return `javac ${name} && java ${m ? m[1] : "Main"}`;
+  }
+  return "";
+}
+
+function buildProjectCmd(language, content) {
+  if (language === "python")     return `python3 -u $(ls *.py | head -1)`;
+  if (language === "javascript") return `node $(ls *.js | head -1)`;
+  if (language === "typescript") return `npx ts-node $(ls *.ts | head -1)`;
+  if (language === "cpp")        return `g++ -O2 *.cpp -o _app 2>&1 && ./_app`;
+  if (language === "java") {
+    const m = (content || "").match(/public\s+class\s+(\w+)/);
+    return `javac *.java && java ${m ? m[1] : "Main"}`;
+  }
+  return "";
+}
+
+const XTERM_THEME = {
+  background:                  "#0d0d10",
+  foreground:                  "#d4d4d4",
+  cursor:                      "#9ed4aa",
+  cursorAccent:                "#0d0d10",
+  selectionBackground:         "rgba(111,185,130,0.22)",
+  selectionForeground:         "#ffffff",
+  selectionInactiveBackground: "rgba(111,185,130,0.10)",
+  black:    "#1e1e1e", red:    "#f44747", green:   "#4ec9b0", yellow:  "#dcdcaa",
+  blue:     "#569cd6", magenta:"#c586c0", cyan:    "#9cdcfe", white:   "#d4d4d4",
+  brightBlack:   "#808080", brightRed:    "#f44747", brightGreen:  "#4ec9b0",
+  brightYellow:  "#dcdcaa", brightBlue:   "#569cd6", brightMagenta:"#c586c0",
+  brightCyan:    "#9cdcfe", brightWhite:  "#ffffff",
+};
+
+// ─── component ───────────────────────────────────────────────────────────────
+
+export function OutputPanel({
+  activeFile,
+  output,
+  running,
+  stdin,
+  onStdinChange,
+  onRun,
   onStop,
   socket,
   roomId,
-  height = 238
+  height = 260,
 }) {
-  const [activeTab, setActiveTab] = useState("terminal"); // "terminal" | "compiler"
-  const terminalContainerRef = useRef(null);
-  const xtermRef = useRef(null);
-  const fitAddonRef = useRef(null);
-  
-  const canRun = ["javascript", "python", "cpp", "typescript", "java"].includes(activeFile?.language);
-  const runLabel = { javascript: "JS", python: "Py", cpp: "C++", typescript: "TS", java: "Java" }[activeFile?.language] || "";
-  
-  // Set up xterm.js interactive terminal
+  const [panel,        setPanel]        = useState("terminal");
+  const [tabs,         setTabs]         = useState(() => [makeTab(1)]);
+  const [activeTermId, setActiveTermId] = useState(() => tabs[0].id);
+  const [showSearch,   setShowSearch]   = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [fontSize,     setFontSize]     = useState(13);
+
+  const innerRefs   = useRef({});  // termId → DOM node xterm mounts into
+  const xtermMap    = useRef({});  // termId → { term, fitAddon, searchAddon, ro }
+  const searchRef   = useRef(null);
+  const activeIdRef = useRef(activeTermId);
+  activeIdRef.current = activeTermId;
+
+  const canRun = ["javascript", "python", "cpp", "typescript", "java"]
+    .includes(activeFile?.language);
+
+  // ── single global socket output router ───────────────────────────────────
   useEffect(() => {
-    if (typeof window === "undefined" || !socket || !roomId || activeTab !== "terminal") return;
-    
-    let isMounted = true;
-    let term;
-    let fitAddon;
-    let resizeObserver;
+    if (!socket) return;
+    const onOut = ({ data, termId }) => {
+      const e = xtermMap.current[termId ?? activeIdRef.current];
+      e?.term?.write(data);
+    };
+    const onClosed = ({ termId }) => {
+      const e = xtermMap.current[termId];
+      if (e) e.term.write(
+        "\r\n\x1b[38;5;196m[process exited]\x1b[0m  Press \x1b[1mEnter\x1b[0m to restart.\r\n"
+      );
+    };
+    socket.on("terminal_output", onOut);
+    socket.on("terminal_closed", onClosed);
+    return () => {
+      socket.off("terminal_output", onOut);
+      socket.off("terminal_closed", onClosed);
+    };
+  }, [socket]);
+
+  // ── init xterm when a tab becomes the visible active one ─────────────────
+  useEffect(() => {
+    if (!socket || !roomId || panel !== "terminal" || !activeTermId) return;
+
+    if (xtermMap.current[activeTermId]) {
+      setTimeout(() => {
+        const e = xtermMap.current[activeTermId];
+        try { e?.fitAddon?.fit(); e?.term?.focus(); } catch {}
+      }, 20);
+      return;
+    }
+
+    const container = innerRefs.current[activeTermId];
+    if (!container) return;
+
+    let disposed = false;
 
     Promise.all([
       import("@xterm/xterm"),
-      import("@xterm/addon-fit")
-    ]).then(([{ Terminal }, { FitAddon }]) => {
-      if (!isMounted || !terminalContainerRef.current) return;
-      
-      term = new Terminal({
-        cursorBlink: true,
-        cursorStyle: "bar",
-        theme: {
-          background: "#07070a",
-          foreground: "#cbd5e1",
-          cursor: "#9ed4aa",
-          cursorAccent: "#07070a",
-          selectionBackground: "rgba(111, 185, 130, 0.24)",
-          black: "#1a1a2e",
-          red: "#f87171",
-          green: "#4ade80",
-          yellow: "#fbbf24",
-          blue: "#60a5fa",
-          magenta: "#a78bfa",
-          cyan: "#9db5a5",
-          white: "#e2e8f0",
-          brightBlack: "#334155",
-          brightRed: "#fca5a5",
-          brightGreen: "#86efac",
-          brightYellow: "#fde68a",
-          brightBlue: "#93c5fd",
-          brightMagenta: "#b8a8c8",
-          brightCyan: "#b5c5bd",
-          brightWhite: "#f8fafc",
-        },
-        fontSize: 14,
-        fontFamily: "JetBrains Mono, Fira Code, Consolas, monospace",
-        allowProposedApi: true,
-        letterSpacing: 0.5,
-        lineHeight: 1.4,
+      import("@xterm/addon-fit"),
+      import("@xterm/addon-search"),
+      import("@xterm/addon-web-links"),
+    ]).then(([{ Terminal }, { FitAddon }, { SearchAddon }, { WebLinksAddon }]) => {
+      if (disposed || xtermMap.current[activeTermId]) return;
+
+      const term = new Terminal({
+        cursorBlink:        true,
+        cursorStyle:        "bar",
+        cursorWidth:        2,
+        scrollback:         10000,
+        fastScrollModifier: "alt",
+        allowProposedApi:   true,
+        fontSize,
+        fontFamily:         "'JetBrains Mono','Cascadia Code','Fira Code',Menlo,monospace",
+        letterSpacing:      0,
+        lineHeight:         1.5,
+        theme:              XTERM_THEME,
       });
-      
-      fitAddon = new FitAddon();
+
+      const fitAddon    = new FitAddon();
+      const searchAddon = new SearchAddon();
+      const webLinks    = new WebLinksAddon();
+
       term.loadAddon(fitAddon);
-      term.open(terminalContainerRef.current);
-      
-      xtermRef.current = term;
-      fitAddonRef.current = fitAddon;
-      
-      // Delay fit slightly to let DOM sizing stabilize
-      setTimeout(() => {
-        if (!isMounted) return;
+      term.loadAddon(searchAddon);
+      term.loadAddon(webLinks);
+      term.open(container);
+
+      const ts = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      term.writeln(`\x1b[2m  Aether Terminal  ${ts}\x1b[0m\r\n`);
+
+      const ro = new ResizeObserver(() => {
         try {
           fitAddon.fit();
-          socket.emit("terminal_init", {
-            roomId,
-            cols: term.cols,
-            rows: term.rows
-          });
-        } catch (e) {
-          console.warn("Resize fit failed:", e);
-        }
-      }, 100);
-
-      // Handle user typing
-      term.onData((data) => {
-        socket.emit("terminal_input", { data });
-      });
-
-      // Handle server output
-      socket.on("terminal_output", ({ data }) => {
-        if (term) term.write(data);
-      });
-
-      // Handle server closing connection
-      socket.on("terminal_closed", () => {
-        if (term) {
-          term.write("\r\n\x1b[31m[Shell Session Ended]\x1b[0m\r\n");
-        }
-      });
-
-      // ResizeObserver is much cleaner and more reliable than window.onresize
-      resizeObserver = new ResizeObserver(() => {
-        if (!isMounted || !fitAddon || !term) return;
-        try {
-          fitAddon.fit();
-          socket.emit("terminal_resize", {
-            cols: term.cols,
-            rows: term.rows
-          });
+          socket.emit("terminal_resize", { termId: activeTermId, cols: term.cols, rows: term.rows });
         } catch {}
       });
-      
-      if (terminalContainerRef.current) {
-        resizeObserver.observe(terminalContainerRef.current.parentElement);
-      }
+      ro.observe(container.parentElement || container);
+
+      xtermMap.current[activeTermId] = { term, fitAddon, searchAddon, ro };
+
+      term.onData((data) => socket.emit("terminal_input", { termId: activeTermId, data }));
+
+      setTimeout(() => {
+        if (disposed) return;
+        try {
+          fitAddon.fit();
+          socket.emit("terminal_init", { termId: activeTermId, roomId, cols: term.cols, rows: term.rows });
+          term.focus();
+        } catch {}
+      }, 80);
     });
 
-    return () => {
-      isMounted = false;
-      if (socket) {
-        socket.off("terminal_output");
-        socket.off("terminal_closed");
+    return () => { disposed = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTermId, socket, roomId, panel]);
+
+  // ── live font-size update ─────────────────────────────────────────────────
+  useEffect(() => {
+    const e = xtermMap.current[activeTermId];
+    if (!e) return;
+    try { e.term.options.fontSize = fontSize; e.fitAddon.fit(); } catch {}
+  }, [fontSize, activeTermId]);
+
+  // ── Ctrl+F search shortcut ────────────────────────────────────────────────
+  useEffect(() => {
+    const h = (ev) => {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key === "f" && panel === "terminal") {
+        ev.preventDefault();
+        setShowSearch((v) => !v);
       }
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      if (term) {
-        term.dispose();
-      }
-      xtermRef.current = null;
-      fitAddonRef.current = null;
     };
-  }, [socket, roomId, activeTab]);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [panel]);
 
-  function buildRunCommand(language, name, content) {
-    if (language === "python") return `python3 ${name}`;
-    if (language === "javascript") return `node ${name}`;
-    if (language === "typescript") return `npx ts-node ${name}`;
-    if (language === "cpp") return `g++ -O2 ${name} -o main && ./main`;
-    if (language === "java") {
-      const match = (content || "").match(/public\s+class\s+(\w+)/);
-      return `javac ${name} && java ${match ? match[1] : "Main"}`;
-    }
-    return "";
+  useEffect(() => { if (showSearch) searchRef.current?.focus(); }, [showSearch]);
+
+  // ── cleanup on unmount ────────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      Object.values(xtermMap.current).forEach(({ term, ro }) => {
+        ro?.disconnect();
+        term?.dispose();
+      });
+    };
+  }, []);
+
+  // ── search ────────────────────────────────────────────────────────────────
+  function doSearch(q, dir = "next") {
+    const e = xtermMap.current[activeTermId];
+    if (!e) return;
+    const opts = { caseSensitive: false, incremental: false };
+    dir === "next" ? e.searchAddon.findNext(q, opts) : e.searchAddon.findPrevious(q, opts);
   }
 
-  // Run single active file in terminal
-  function handleRunInTerminal() {
-    if (!socket || !activeFile) return;
-    const cmd = buildRunCommand(activeFile.language, activeFile.name, activeFile.content);
-    if (cmd) socket.emit("terminal_input", { data: `${cmd}\r` });
+  // ── terminal tab management ───────────────────────────────────────────────
+  function addTerminal() {
+    if (tabs.length >= 6) return;
+    const tab = makeTab(tabs.length + 1);
+    setTabs((p) => [...p, tab]);
+    setActiveTermId(tab.id);
   }
 
-  // Run whole project: wildcard compilation where possible
-  function handleRunProject() {
-    if (!socket || !activeFile) return;
-    const lang = activeFile.language;
-    const name = activeFile.name;
-    let cmd = "";
-    if (lang === "python") cmd = `python3 ${name}`;
-    else if (lang === "javascript") cmd = `node ${name}`;
-    else if (lang === "typescript") cmd = `npx ts-node ${name}`;
-    else if (lang === "cpp") cmd = `g++ -O2 *.cpp -o app 2>&1 && ./app`;
-    else if (lang === "java") {
-      const match = (activeFile.content || "").match(/public\s+class\s+(\w+)/);
-      cmd = `javac *.java && java ${match ? match[1] : "Main"}`;
-    }
-    if (cmd) socket.emit("terminal_input", { data: `${cmd}\r` });
+  function closeTab(termId) {
+    socket?.emit("terminal_kill", { termId });
+    const entry = xtermMap.current[termId];
+    if (entry) { entry.ro?.disconnect(); entry.term?.dispose(); delete xtermMap.current[termId]; }
+    delete innerRefs.current[termId];
+
+    setTabs((prev) => {
+      const next = prev.filter((t) => t.id !== termId);
+      if (activeTermId === termId && next.length) {
+        const idx = prev.findIndex((t) => t.id === termId);
+        setActiveTermId(next[Math.min(idx, next.length - 1)].id);
+      }
+      return next;
+    });
   }
 
-  function clearTerminal() {
-    if (xtermRef.current) {
-      xtermRef.current.clear();
-      // Also send clear command to shell
-      socket.emit("terminal_input", { data: "clear\r" });
-    }
-  }
+  // ── run commands ──────────────────────────────────────────────────────────
+  function sendCmd(cmd) { socket?.emit("terminal_input", { termId: activeTermId, data: `${cmd}\r` }); }
+  function clearActive() { const e = xtermMap.current[activeTermId]; if (e) { e.term.clear(); sendCmd("clear"); } }
+  function handleRunFile()    { if (!activeFile) return; const c = buildRunCmd(activeFile.language, activeFile.name, activeFile.content); if (c) sendCmd(c); }
+  function handleRunProject() { if (!activeFile) return; const c = buildProjectCmd(activeFile.language, activeFile.content); if (c) sendCmd(c); }
 
+  // ─── render ───────────────────────────────────────────────────────────────
   return (
-    <section className="flex shrink-0 select-none flex-col bg-[#17181c] font-mono" style={{ height }}>
-      {/* VS Code Tab Bar */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-white/10 bg-[#1b1d22] px-3">
-        <div className="flex h-full items-center gap-1">
-          {/* Terminal Tab */}
-          <button
-            onClick={() => setActiveTab("terminal")}
-            className={`relative flex h-full items-center gap-1.5 px-3 text-[11px] font-black uppercase tracking-widest transition ${
-              activeTab === "terminal" ? "text-[#9ed4aa]" : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {activeTab === "terminal" && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#6fb982] " />}
-            &gt;_ TERMINAL
-          </button>
+    <section className="flex shrink-0 select-none flex-col" style={{ height, background: "#0d0d10" }}>
 
-          {/* Compiler Tab */}
-          <button
-            onClick={() => setActiveTab("compiler")}
-            className={`relative flex h-full items-center gap-1.5 px-3 text-[11px] font-black uppercase tracking-widest transition ${
-              activeTab === "compiler" ? "text-[#9ed4aa]" : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {activeTab === "compiler" && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#6fb982] " />}
-            COMPILER OUTPUT
-          </button>
-        </div>
-        
-        {/* Actions bar */}
-        <div className="flex items-center gap-2">
-          {activeTab === "terminal" ? (
-            <>
-              <button 
-                onClick={clearTerminal}
-                title="Clear Terminal"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/[0.055] hover:text-white"
+      {/* ── header / tab bar ── */}
+      <div className="flex h-9 shrink-0 items-stretch border-b border-white/[0.07]" style={{ background: "#141418" }}>
+
+        {/* Panel type selectors */}
+        <button
+          onClick={() => setPanel("terminal")}
+          className={`flex shrink-0 items-center gap-1.5 border-r border-white/[0.06] px-4 text-[10px] font-bold uppercase tracking-[0.12em] transition ${
+            panel === "terminal" ? "border-b-2 border-b-[#6fb982] bg-[#0d0d10] text-[#9ed4aa]" : "text-slate-500 hover:text-slate-300"
+          }`}
+        >
+          <ChevronRight size={10} /> TERMINAL
+        </button>
+        <button
+          onClick={() => setPanel("compiler")}
+          className={`flex shrink-0 items-center gap-1.5 border-r border-white/[0.06] px-4 text-[10px] font-bold uppercase tracking-[0.12em] transition ${
+            panel === "compiler" ? "border-b-2 border-b-[#6fb982] bg-[#0d0d10] text-[#9ed4aa]" : "text-slate-500 hover:text-slate-300"
+          }`}
+        >
+          COMPILER
+        </button>
+
+        {/* Terminal instance tabs */}
+        {panel === "terminal" && (
+          <div className="flex min-w-0 flex-1 items-stretch overflow-hidden">
+            {tabs.map((tab) => (
+              <div
+                key={tab.id}
+                onClick={() => setActiveTermId(tab.id)}
+                className={`group relative flex shrink-0 cursor-pointer items-center gap-1.5 border-r border-white/[0.05] px-3 text-[10px] transition ${
+                  activeTermId === tab.id
+                    ? "bg-[#0d0d10] text-slate-200"
+                    : "text-slate-500 hover:bg-white/[0.03] hover:text-slate-300"
+                }`}
               >
+                {activeTermId === tab.id && (
+                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[#6fb982]" />
+                )}
+                <TermIcon size={9} className={activeTermId === tab.id ? "text-[#9ed4aa]" : ""} />
+                <span className="font-mono">{tab.name}</span>
+                {tabs.length > 1 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
+                    className="ml-0.5 rounded p-0.5 text-slate-700 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                  >
+                    <X size={8} />
+                  </button>
+                )}
+              </div>
+            ))}
+            {tabs.length < 6 && (
+              <button
+                onClick={addTerminal}
+                title="New terminal session"
+                className="flex shrink-0 items-center px-2.5 text-slate-600 transition hover:bg-white/[0.04] hover:text-[#9ed4aa]"
+              >
+                <Plus size={11} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Right-side controls */}
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 px-2">
+          {panel === "terminal" && (
+            <>
+              <button onClick={() => setFontSize((s) => Math.max(9, s - 1))} title="Smaller font" className="flex h-6 w-6 items-center justify-center rounded text-slate-600 transition hover:bg-white/[0.05] hover:text-slate-300">
+                <Minus size={10} />
+              </button>
+              <span className="w-5 text-center font-mono text-[9px] tabular-nums text-slate-600">{fontSize}</span>
+              <button onClick={() => setFontSize((s) => Math.min(22, s + 1))} title="Larger font" className="flex h-6 w-6 items-center justify-center rounded text-slate-600 transition hover:bg-white/[0.05] hover:text-slate-300">
+                <Plus size={10} />
+              </button>
+
+              <div className="mx-1.5 h-4 w-px bg-white/[0.08]" />
+
+              <button onClick={() => setShowSearch((v) => !v)} title="Find in terminal (Ctrl+F)" className={`flex h-6 w-6 items-center justify-center rounded transition ${showSearch ? "bg-[#6fb982]/10 text-[#9ed4aa]" : "text-slate-600 hover:bg-white/[0.05] hover:text-slate-300"}`}>
+                <Search size={11} />
+              </button>
+              <button onClick={clearActive} title="Clear" className="flex h-6 w-6 items-center justify-center rounded text-slate-600 transition hover:bg-white/[0.05] hover:text-slate-300">
                 <Trash2 size={11} />
               </button>
-              <button
-                disabled={!canRun}
-                onClick={handleRunInTerminal}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#6fb982] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/10 disabled:cursor-not-allowed disabled:opacity-30"
-                title="Run active file"
-              >
-                <Play size={8} className="fill-current text-[#9ed4aa]" /> Run File
+
+              <div className="mx-1.5 h-4 w-px bg-white/[0.08]" />
+
+              <button disabled={!canRun} onClick={handleRunFile} title="Run active file in terminal" className="flex h-6 items-center gap-1 rounded border border-[#6fb982]/25 bg-[#6fb982]/[0.07] px-2 text-[9px] font-bold uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/[0.15] disabled:cursor-not-allowed disabled:opacity-30">
+                <Play size={8} className="fill-current" /> Run
               </button>
-              <button
-                disabled={!canRun}
-                onClick={handleRunProject}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-600 bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-slate-400 transition hover:border-[#6fb982]/60 hover:text-[#9ed4aa] disabled:cursor-not-allowed disabled:opacity-30"
-                title="Run project (compiles all files)"
-              >
-                <Play size={8} className="fill-current" /> Run Project
+              <button disabled={!canRun} onClick={handleRunProject} title="Compile and run all project files" className="ml-0.5 flex h-6 items-center gap-1 rounded border border-slate-700/40 px-2 text-[9px] font-bold uppercase tracking-wider text-slate-400 transition hover:border-[#6fb982]/25 hover:text-[#9ed4aa] disabled:cursor-not-allowed disabled:opacity-30">
+                Run All
               </button>
             </>
-          ) : (
-            <div>
-              {running ? (
-                <button 
-                  onClick={onStop}
-                  className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-red-500/30 bg-transparent px-3 text-[9px] font-black uppercase tracking-wider text-red-400 transition hover:bg-red-500/10"
-                >
-                  <Square size={8} className="fill-current text-red-500 animate-pulse" /> STOP RUN
-                </button>
-              ) : (
-                <button 
-                  disabled={!canRun} 
-                  onClick={onRun}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#6fb982] bg-transparent px-3 text-[10px] font-black uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/10 disabled:cursor-not-allowed disabled:opacity-30"
-                >
-                  <Play size={8} className="fill-current text-[#9ed4aa]" /> RUN CODE
-                </button>
-              )}
-            </div>
+          )}
+
+          {panel === "compiler" && (
+            running ? (
+              <button onClick={onStop} className="flex h-6 items-center gap-1 rounded border border-red-500/30 bg-red-500/[0.07] px-2 text-[9px] font-bold uppercase tracking-wider text-red-400 transition hover:bg-red-500/[0.14]">
+                <Square size={8} className="fill-current animate-pulse" /> Stop
+              </button>
+            ) : (
+              <button disabled={!canRun} onClick={onRun} className="flex h-6 items-center gap-1 rounded border border-[#6fb982]/25 bg-[#6fb982]/[0.07] px-2 text-[9px] font-bold uppercase tracking-wider text-[#9ed4aa] transition hover:bg-[#6fb982]/[0.15] disabled:cursor-not-allowed disabled:opacity-30">
+                <Play size={8} className="fill-current" /> Run Code
+              </button>
+            )
           )}
         </div>
       </div>
 
-      {/* Terminal View Container */}
-      <div className="flex-1 min-h-0 relative">
-        {/* Tab 1: Interactive PTY Terminal */}
-        <div 
-          className={`absolute inset-0 overflow-hidden bg-[#17181c] p-2.5 ${
-            activeTab === "terminal" ? "block" : "hidden"
-          }`}
-        >
-          <div ref={terminalContainerRef} className="h-full w-full" />
+      {/* ── in-terminal search bar ── */}
+      {panel === "terminal" && showSearch && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-3 py-1.5" style={{ background: "#141418" }}>
+          <Search size={10} className="shrink-0 text-slate-500" />
+          <input
+            ref={searchRef}
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); doSearch(e.target.value); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") doSearch(searchQuery, e.shiftKey ? "prev" : "next");
+              if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); }
+            }}
+            placeholder="Find in terminal…  Enter ↓  Shift+Enter ↑  Esc to close"
+            className="flex-1 bg-transparent font-mono text-[11px] text-slate-200 outline-none placeholder:text-slate-600"
+          />
+          <div className="flex items-center gap-0.5">
+            <button onClick={() => doSearch(searchQuery, "prev")} className="flex h-5 w-5 items-center justify-center rounded text-[11px] text-slate-500 hover:bg-white/[0.05] hover:text-slate-200">↑</button>
+            <button onClick={() => doSearch(searchQuery, "next")} className="flex h-5 w-5 items-center justify-center rounded text-[11px] text-slate-500 hover:bg-white/[0.05] hover:text-slate-200">↓</button>
+            <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:text-red-400">
+              <X size={9} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── main content area ── */}
+      <div className="relative min-h-0 flex-1">
+
+        {/* Terminal panes — all kept in DOM; visibility toggled with CSS */}
+        <div className={`absolute inset-0 ${panel === "terminal" ? "block" : "hidden"}`}>
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`absolute inset-0 overflow-hidden p-2 ${activeTermId === tab.id ? "block" : "hidden"}`}
+            >
+              <div
+                ref={(el) => { if (el) innerRefs.current[tab.id] = el; }}
+                className="h-full w-full"
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Tab 2: Classic Isolated Compiler */}
-        <div 
-          className={`absolute inset-0 flex flex-col ${
-            activeTab === "compiler" ? "flex" : "hidden"
-          }`}
-        >
-          {/* Output Screen */}
-          <div className="scrollbar-thin flex-1 overflow-auto bg-[#111216] p-4 font-mono text-[14px] leading-relaxed select-text">
+        {/* Compiler / sandbox panel */}
+        <div className={`absolute inset-0 flex flex-col ${panel === "compiler" ? "flex" : "hidden"}`} style={{ background: "#0d0d10" }}>
+          <div className="scrollbar-thin min-h-0 flex-1 overflow-auto p-4 font-mono text-[13px] leading-relaxed select-text">
             {output ? (
-              <div className="space-y-1">
-                {output.split("\n").map((line, idx) => {
-                  const isStderrLine = line.startsWith("[stderr]") || line.toLowerCase().includes("error") || line.toLowerCase().includes("exception") || line.toLowerCase().includes("failed");
+              <div className="space-y-0.5">
+                {output.split("\n").map((line, i) => {
+                  const isErr = line.startsWith("[stderr]") || /\b(error|exception|failed|traceback)\b/i.test(line);
                   return (
-                    <div 
-                      key={idx} 
-                      className={isStderrLine ? "text-red-400 bg-red-950/20 px-2 py-0.5 rounded border border-red-900/10 font-bold" : "text-slate-300"}
-                    >
-                      {line}
+                    <div key={i} className={isErr ? "font-medium text-[#f44747]" : "text-[#d4d4d4]"}>
+                      {line || " "}
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-slate-600 text-[13px] italic">
-                {canRun 
-                  ? "Standby compiler. Click Compile to execute a sandboxed run." 
-                  : "Active language buffer not executable. Open a JS, TS, Py, C++, or Java file."}
-              </div>
+              <span className="text-[12px] italic text-slate-600">
+                {canRun
+                  ? "Press Run Code to execute in an isolated sandbox."
+                  : "Open a JS, TS, Python, C++, or Java file to run."}
+              </span>
             )}
           </div>
-
-          {/* Stdin input bar */}
-          <div className="relative flex h-11 shrink-0 items-center border-t border-white/10 bg-[#111216] px-3.5">
-            <span className="mr-2 shrink-0 select-none text-[11px] font-extrabold uppercase tracking-wider text-[#9ed4aa]">$ stdin &gt;</span>
+          <div className="flex h-10 shrink-0 items-center border-t border-white/[0.07] px-4" style={{ background: "#141418" }}>
+            <span className="mr-2 shrink-0 font-mono text-[10px] font-bold text-[#9ed4aa]">stdin&gt;</span>
             <input
-              className="w-full bg-transparent text-[13px] text-slate-300 placeholder-slate-600 outline-none"
+              className="flex-1 bg-transparent font-mono text-[12px] text-slate-300 outline-none placeholder:text-slate-700"
               value={stdin}
               onChange={(e) => onStdinChange(e.target.value)}
-              placeholder="Input standard stdin stream here..."
+              placeholder="Standard input for sandbox run…"
             />
           </div>
         </div>
