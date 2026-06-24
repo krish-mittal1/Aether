@@ -1220,58 +1220,48 @@ Keep it concise but useful. Do not rewrite the file.`
   const colLayout = [showExplorer && !zenMode && `${explorerWidth}px`, "minmax(0,1fr)", rightPanelVisible && `${rightPanelWidth}px`].filter(Boolean).join(" ");
 
   return (
-    <main className={`ide-shell grid h-screen text-slate-200 font-sans ${zenMode ? "grid-rows-[52px_1fr]" : "grid-rows-[52px_1fr_28px]"}`}>
+    <main className={`ide-shell grid h-screen font-sans ${zenMode ? "grid-rows-[52px_1fr]" : "grid-rows-[52px_1fr_22px]"}`} style={{ color: "#cccccc" }}>
       {/* Header */}
-      <header className="ide-topbar z-20 grid h-[52px] grid-cols-[minmax(260px,420px)_minmax(260px,1fr)_auto] items-center gap-3 px-4 select-none">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href="/dashboard" className="flex h-9 w-9 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/[0.06] hover:text-white" title="Dashboard">
-            <Menu size={18} />
+      <header className="ide-topbar z-20 grid h-[52px] grid-cols-[minmax(240px,360px)_minmax(200px,1fr)_auto] items-center gap-2 px-3 select-none">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center text-[#cccccc] transition hover:bg-white/[0.10]" title="Dashboard">
+            <Menu size={16} />
           </Link>
           <div className="min-w-0">
-            <h1 className="truncate text-[13px] font-semibold tracking-wide text-slate-200 uppercase">TEAM WORKSPACE</h1>
-            <div className="mt-0.5 flex items-center gap-1.5 truncate font-mono text-[10px] text-slate-400">
-              <span className="font-semibold text-slate-200">{room.name}</span>
-              <span className="text-slate-600">•</span>
-              <span className="flex items-center gap-0.5 text-slate-500"><Hash size={8} /> {roomId.slice(0, 8)}</span>
+            <div className="truncate text-[12px] font-semibold text-[#cccccc]">{room.name}</div>
+            <div className="flex items-center gap-1 font-mono text-[10px] text-[#858585]">
+              <Hash size={8} />{roomId.slice(0, 8)}
             </div>
           </div>
-          <button className="flex h-9 max-w-[160px] items-center gap-2 rounded-md border border-white/10 bg-white/[0.055] px-3 font-mono text-[12px] text-slate-300 transition hover:bg-white/[0.08]">
-            <Hash size={11} className="text-slate-500" />
-            <span className="truncate">{roomId.slice(0, 8)}...</span>
-            <ChevronRight size={12} className="rotate-90 text-slate-500" />
-          </button>
         </div>
 
         <button
           onClick={() => { setCommandOpen(false); setSearchOpen(true); setQuery(""); }}
-          className="group flex h-9 min-w-0 items-center justify-between rounded-md border border-white/10 bg-[#24262b] px-3.5 text-left text-[14px] text-slate-400 shadow-inner transition hover:border-white/20 hover:bg-[#2d3036] hover:text-slate-200"
+          className="flex h-[26px] min-w-0 items-center justify-between border border-[#5a5a5a] bg-[#3c3c3c] px-3 text-left text-[12px] text-[#858585] transition hover:border-[#6a6a6a] hover:text-[#cccccc]"
           title="Quick Open"
         >
           <span className="flex min-w-0 items-center gap-2">
-            <Search size={14} className="shrink-0 text-slate-500 group-hover:text-slate-300" />
+            <Search size={12} className="shrink-0" />
             <span className="truncate">Search files, symbols, commands...</span>
           </span>
-          <span className="ml-3 shrink-0 rounded border border-white/10 bg-black/25 px-2 py-0.5 font-mono text-[11px] text-slate-500">Ctrl P</span>
+          <span className="ml-2 shrink-0 font-mono text-[10px] text-[#656565]">Ctrl P</span>
         </button>
-        
-        <div className="flex min-w-0 items-center justify-end gap-1.5 overflow-hidden">
-          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/dashboard?join=${roomId}`).then(() => toast.success("Invite link copied!")); }} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] lg:inline-flex">
-            <Copy size={13} className="text-slate-400" /> Invite
+
+        <div className="flex min-w-0 items-center justify-end gap-1 overflow-hidden">
+          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/dashboard?join=${roomId}`).then(() => toast.success("Invite link copied!")); }} className="hidden h-8 shrink-0 items-center gap-1.5 px-3 text-[12px] text-[#cccccc] transition hover:bg-white/[0.10] lg:inline-flex">
+            <Copy size={12} /> INVITE
           </button>
-          <button onClick={openFolderWithFileSystemAccess} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] 2xl:inline-flex">
-            <RefreshCw size={13} className="text-slate-400" /> Sync Folder
+          <button onClick={saveAllFiles} className="hidden h-8 shrink-0 items-center gap-1.5 px-3 text-[12px] text-[#cccccc] transition hover:bg-white/[0.10] xl:inline-flex">
+            <Download size={12} /> SAVE ALL
           </button>
-          <button onClick={saveAllFiles} className="hidden h-9 shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.055] px-3 text-[12px] font-semibold uppercase tracking-wide text-slate-200 transition hover:bg-white/[0.09] xl:inline-flex">
-            <Download size={13} className="text-slate-400" /> Save All
-          </button>
-          <button onClick={saveActiveFile} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#6fb982] px-4 text-[13px] font-semibold uppercase text-[#07110b] transition hover:bg-[#84c792]">
-            <Save size={13} /> Save
+          <button onClick={saveActiveFile} className="inline-flex h-8 shrink-0 items-center gap-1.5 bg-[#0e639c] px-4 text-[12px] font-semibold text-white transition hover:bg-[#1177bb]">
+            <Save size={12} /> SAVE
           </button>
         </div>
       </header>
 
       {/* Workspace body */}
-      <div className="flex min-h-0 overflow-hidden bg-[#121316]">
+      <div className="flex min-h-0 overflow-hidden bg-[#1e1e1e]">
         {/* Activity Bar */}
         {!zenMode && (
           <ActivityBar
@@ -1288,10 +1278,10 @@ Keep it concise but useful. Do not rewrite the file.`
         <div className="min-h-0 flex-1" style={{ display: "grid", gridTemplateColumns: colLayout, overflow: "hidden", height: "100%" }}>
           {/* Explorer */}
           {showExplorer && !zenMode && (
-            <div className="relative overflow-hidden border-r border-white/10 shadow-2xl shadow-black/20" style={{ height: "100%" }}>
+            <div className="relative overflow-hidden border-r border-[#3c3c3c]" style={{ height: "100%" }}>
               <FileExplorer files={files} activeFile={activeFile} onSelect={selectFile} onCreate={createFile} onImportFolder={importFolder} onDelete={deleteFile} onRename={renameFile} onMove={moveFile} localHandles={localHandles} />
               <div
-                className="absolute right-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#6fb982]/50"
+                className="absolute right-0 top-0 z-30 h-full w-[3px] cursor-col-resize bg-transparent transition hover:bg-[#007acc]/70"
                 onMouseDown={(event) => beginPanelResize("explorer", event)}
                 title="Drag to resize explorer"
               />
@@ -1299,32 +1289,30 @@ Keep it concise but useful. Do not rewrite the file.`
           )}
 
           {/* Editor column */}
-          <div className="flex min-w-0 flex-col min-h-0 overflow-hidden border-x border-white/10 bg-[#1f2024] shadow-2xl shadow-black/20">
+          <div className="flex min-w-0 flex-col min-h-0 overflow-hidden border-x border-[#3c3c3c] bg-[#1e1e1e]">
             {/* VS Code style menu bar */}
             {!zenMode && (
-              <div className="flex h-[46px] shrink-0 items-center gap-3 overflow-hidden border-b border-white/10 bg-[#1b1d22] px-3">
-                <div className="scrollbar-thin flex min-w-0 flex-1 items-center gap-4 overflow-x-auto whitespace-nowrap pr-2 text-[14px] text-slate-200">
+              <div className="flex h-[38px] shrink-0 items-center gap-3 overflow-hidden border-b border-[#252526] bg-[#3c3c3c] px-3">
+                <div className="scrollbar-thin flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap pr-2 text-[13px] text-[#cccccc]">
                   {["File", "Edit", "View", "Go", "Run", "Terminal", "Help"].map((item) => (
-                    <button key={item} className="transition hover:text-white">{item}</button>
+                    <button key={item} className="rounded px-2 py-0.5 transition hover:bg-white/[0.10]">{item}</button>
                   ))}
                   <span className="h-5 w-px bg-white/10" />
-                  <button onClick={runCode} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
-                    <Play size={14} /> Run
+                  <span className="mx-1 h-4 w-px bg-white/20" />
+                  <button onClick={runCode} className="flex items-center gap-1.5 rounded px-2 py-0.5 transition hover:bg-white/[0.10]">
+                    <Play size={12} /> Run
                   </button>
-                  <button onClick={() => setAiPanelOpen(true)} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
-                    <Bot size={14} /> AI Assistant
+                  <button onClick={() => setAiPanelOpen(true)} className="flex items-center gap-1.5 rounded px-2 py-0.5 transition hover:bg-white/[0.10]">
+                    <Bot size={12} /> AI Assistant
                   </button>
-                  <button onClick={() => setInlineAiEnabled((enabled) => !enabled)} className={`flex items-center gap-1.5 transition ${inlineAiEnabled ? "text-slate-100" : "text-slate-500"}`}>
-                    <Wand2 size={14} /> Inline AI
+                  <button onClick={() => setInlineAiEnabled((enabled) => !enabled)} className={`flex items-center gap-1.5 rounded px-2 py-0.5 transition hover:bg-white/[0.10] ${inlineAiEnabled ? "text-[#cccccc]" : "text-[#858585]"}`}>
+                    <Wand2 size={12} /> Inline AI
                   </button>
-                  <button onClick={() => handleActivityPanel("git")} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
-                    <GitBranch size={14} /> Git
+                  <button onClick={() => handleActivityPanel("git")} className="flex items-center gap-1.5 rounded px-2 py-0.5 transition hover:bg-white/[0.10]">
+                    <GitBranch size={12} /> Git
                   </button>
-                  <button onClick={saveAllFiles} className="flex items-center gap-1.5 text-slate-200 transition hover:text-white">
-                    <RefreshCw size={14} /> Sync
-                  </button>
-                  <button onClick={saveActiveFile} className="rounded bg-[#6fb982] px-2.5 py-1 text-[13px] font-semibold text-[#07110b] transition hover:bg-[#84c792]">
-                    Save
+                  <button onClick={saveAllFiles} className="flex items-center gap-1.5 rounded px-2 py-0.5 transition hover:bg-white/[0.10]">
+                    <RefreshCw size={12} /> Sync
                   </button>
                 </div>
                 <div className="flex shrink-0 items-center gap-2 text-slate-400">
@@ -1336,7 +1324,7 @@ Keep it concise but useful. Do not rewrite the file.`
 
             {/* Breadcrumb */}
             {activeFile && !zenMode && (
-              <div className="scrollbar-thin flex shrink-0 items-center gap-1 overflow-x-auto border-b border-white/10 bg-[#1a1c21] px-4 py-2 font-mono text-[12px] text-slate-500 select-none">
+              <div className="scrollbar-thin flex shrink-0 items-center gap-1 overflow-x-auto border-b border-[#252526] bg-[#2d2d2d] px-4 py-1.5 font-mono text-[11px] text-[#858585] select-none">
                 {breadcrumb.map((seg, i) => (
                   <span key={i} className="flex items-center gap-1 shrink-0">
                     {i > 0 && <ChevronRight size={8} className="text-slate-600" />}
@@ -1347,27 +1335,27 @@ Keep it concise but useful. Do not rewrite the file.`
             )}
 
             {/* Tabs */}
-            <div className="ide-tabbar scrollbar-thin flex shrink-0 items-center overflow-x-auto border-b text-xs select-none">
+            <div className="ide-tabbar scrollbar-thin flex shrink-0 items-center overflow-x-auto border-b border-[#252526] text-xs select-none" style={{ height: 35 }}>
               {openTabs.length ? openTabs.map((fileId) => {
                 const file = files.find((f) => f.id === fileId);
                 if (!file) return null;
                 const dirty = dirtyFiles[fileId];
                 const isActive = activeFile?.id === fileId;
                 return (
-                  <button key={fileId} className={`group relative flex h-10 min-w-36 shrink-0 items-center justify-between border-r border-slate-700/20 px-4 font-mono text-[13px] transition ${isActive ? "ide-tab-active font-semibold" : "text-slate-400 hover:bg-white/[0.035] hover:text-slate-100"}`}
+                  <button key={fileId} className={`group relative flex h-full min-w-[120px] shrink-0 items-center justify-between border-r border-[#252526] px-4 font-mono text-[12px] transition ${isActive ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d2d] text-[#858585] hover:bg-[#2a2a2a] hover:text-[#cccccc]"}`}
                     onClick={() => selectFile(file)}
                     onContextMenu={(e) => { e.preventDefault(); setTabMenu({ x: e.clientX, y: e.clientY, fileId }); }}>
-                    {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#6fb982]" />}
+                    {isActive && <span className="absolute inset-x-0 top-0 h-[1px] bg-[#6fb982]" />}
                     <span className="truncate pr-2.5 flex items-center gap-1.5">
-                      {dirty && <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#6fb982]" />}
+                      {dirty && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#6fb982]" />}
                       {file.name}
                     </span>
-                    <button onClick={(e) => { e.stopPropagation(); closeTab(fileId); }} className="rounded p-0.5 opacity-0 hover:bg-white/10 group-hover:opacity-100 transition">
+                    <button onClick={(e) => { e.stopPropagation(); closeTab(fileId); }} className="flex h-4 w-4 items-center justify-center opacity-0 hover:bg-white/10 group-hover:opacity-100 transition">
                       <X size={9} />
                     </button>
                   </button>
                 );
-              }) : <span className="px-4 text-slate-500 italic font-mono text-[10px]">No active buffers</span>}
+              }) : <span className="px-4 text-[#858585] italic font-mono text-[11px]">No open editors</span>}
             </div>
 
             {/* Editor or Notebook */}
@@ -1419,7 +1407,7 @@ Keep it concise but useful. Do not rewrite the file.`
                   }}
                 />
               ) : (
-                <div className="flex h-full flex-col items-center justify-center bg-[#0b1015] p-8 text-center select-none">
+                <div className="flex h-full flex-col items-center justify-center bg-[#1e1e1e] p-8 text-center select-none">
                   <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl border border-[#6fb982]/15 bg-[#6fb982]/5 text-[#b7c9bd] ">
                     <Code2Icon size={22} />
                   </span>
@@ -1439,7 +1427,7 @@ Keep it concise but useful. Do not rewrite the file.`
             {showTerminal && (
               <>
                 <div
-                  className="group flex h-2 shrink-0 cursor-row-resize items-center justify-center bg-[#15171b] hover:bg-[#6fb982]/5"
+                  className="group flex h-[3px] shrink-0 cursor-row-resize items-center justify-center bg-[#252526] hover:bg-[#007acc]/50"
                   onMouseDown={() => {
                     terminalResizeRef.current = true;
                     document.body.style.cursor = "row-resize";
@@ -1456,7 +1444,7 @@ Keep it concise but useful. Do not rewrite the file.`
 
           {/* Right rail: AI or Chat */}
           {rightPanelVisible && (
-            <div className="relative flex min-h-0 overflow-hidden border-l border-white/10 bg-[#181a1f] shadow-2xl shadow-black/25">
+            <div className="relative flex min-h-0 overflow-hidden border-l border-[#3c3c3c] bg-[#252526]">
               <div
                 className="absolute left-0 top-0 z-30 h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[#6fb982]/50"
                 onMouseDown={(event) => beginPanelResize("right", event)}
@@ -1608,39 +1596,38 @@ Keep it concise but useful. Do not rewrite the file.`
 
       {/* Status Bar */}
       {!zenMode && (
-        <footer className="ide-status z-20 flex h-[28px] items-center justify-between px-4 font-mono text-[11px] text-slate-400 select-none">
-          <span className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6fb982]" />{users.length} Peer{users.length !== 1 ? "s" : ""}</span>
-            <span className="h-3 w-[1px] bg-line/60" />
-            <button className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase ${autoSave ? "border border-[#6fb982]/20 bg-[#6fb982]/10 text-[#b7c9bd]" : "border border-slate-700/30 bg-slate-900 text-slate-500"}`} onClick={() => setAutoSave(v => !v)}>Auto Save {autoSave ? "On" : "Off"}</button>
+        <footer className="ide-status z-20 flex h-[22px] items-center justify-between px-3 font-mono text-[11px] text-white select-none">
+          <span className="flex items-center gap-0">
+            <span className="flex items-center gap-1.5 px-2 hover:bg-white/[0.12] transition h-full cursor-pointer">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/80" />{users.length} Peer{users.length !== 1 ? "s" : ""}
+            </span>
+            <button className={`px-2 h-full transition hover:bg-white/[0.12] ${autoSave ? "opacity-100" : "opacity-60"}`} onClick={() => setAutoSave(v => !v)}>
+              Auto Save {autoSave ? "On" : "Off"}
+            </button>
             {localSyncStatus === "connected" && (
-              <><span className="h-3 w-[1px] bg-line/60" /><span className="flex items-center gap-1 text-accent"><HardDrive size={10} />Synced: {localDirName}<button className="ml-1.5 hover:text-red-400 transition" onClick={disconnectLocalFolder}>(disconnect)</button></span></>
+              <span className="flex items-center gap-1 px-2 hover:bg-white/[0.12] transition cursor-pointer h-full">
+                <HardDrive size={10} />Synced: {localDirName}
+                <button className="ml-1 opacity-60 hover:opacity-100 transition" onClick={disconnectLocalFolder}>(×)</button>
+              </span>
             )}
             {localSyncStatus === "needs-permission" && (
-              <><span className="h-3 w-[1px] bg-line/60" /><button className="flex items-center gap-1 rounded bg-yellow-600/20 px-1.5 py-0.5 text-[8px] text-yellow-400 border border-yellow-600/30 font-bold uppercase tracking-wide" onClick={reconnectLocalFolder}><FolderOpen size={10} />Reconnect FS</button></>
+              <button className="flex items-center gap-1 px-2 h-full hover:bg-white/[0.12] transition text-yellow-200" onClick={reconnectLocalFolder}>
+                <FolderOpen size={10} />Reconnect FS
+              </button>
             )}
           </span>
-          <span className="flex items-center gap-3">
+          <span className="flex items-center gap-0">
             {activeFile && (
               <>
-                <span id="footer-cursor-pos">Ln {cursorPosRef.current.line}, Col {cursorPosRef.current.col}</span>
-                <span className="h-3 w-[1px] bg-line/60" />
-                <span>{indentSize} spaces</span>
-                <span className="h-3 w-[1px] bg-line/60" />
-                <span className="font-bold uppercase tracking-wider text-[#9ed4aa]">{activeFile.language}</span>
+                <span id="footer-cursor-pos" className="px-2 hover:bg-white/[0.12] transition h-full flex items-center cursor-pointer">Ln {cursorPosRef.current.line}, Col {cursorPosRef.current.col}</span>
+                <span className="px-2 hover:bg-white/[0.12] transition h-full flex items-center cursor-pointer">{indentSize} spaces</span>
+                <span className="px-2 hover:bg-white/[0.12] transition h-full flex items-center cursor-pointer uppercase tracking-wide">{activeFile.language}</span>
               </>
             )}
           </span>
         </footer>
       )}
 
-      {/* Floating neon "1 Issue" badge at bottom-left */}
-      <div className="fixed bottom-10 left-4 z-50 flex items-center gap-2 rounded-full border border-[#6fb982] bg-[#17181c] px-3.5 py-1.5 ">
-        <span className="flex h-2 w-2 relative">
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#6fb982]"></span>
-        </span>
-        <span className="font-mono text-[10px] font-bold text-[#b7c9bd] tracking-wider">1 ISSUE</span>
-      </div>
 
       {/* Modals & Menus */}
       {searchOpen && (

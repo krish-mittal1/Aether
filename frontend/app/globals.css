@@ -3,202 +3,165 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 body {
   margin: 0;
-  color: #f1f5f9;
-  background: #111216;
+  color: #cccccc;
+  background: #1e1e1e;
+  font-size: 13px;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Sleek global scrollbar styles */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(154, 163, 174, 0.22);
-  border-radius: 9999px;
-  transition: background 0.2s;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(154, 163, 174, 0.42);
-}
-
+/* ─── Scrollbars ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #424242; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: #555555; }
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(154, 163, 174, 0.24) transparent;
+  scrollbar-color: #424242 transparent;
 }
 
-/* Monaco Remote Cursor custom decoration overrides */
-.monaco-editor .remote-cursor {
-  border-left: 2px solid #6fb982;
-}
+/* ─── Monaco remote cursor ──────────────────────────────────────────────── */
+.monaco-editor .remote-cursor      { border-left: 2px solid #6fb982; }
+.monaco-editor .remote-cursor-line { background: rgba(111,185,130,0.04); }
 
-.monaco-editor .remote-cursor-line {
-  background: rgba(111,185,130,0.05);
-}
+/* ─── VS Code structural colors ─────────────────────────────────────────── */
 
-/* Custom premium layouts & glassmorphism styling */
-.glass-card {
-  background: rgba(7, 11, 16, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(143,179,155,0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-}
-
-.premium-card {
-  background: rgba(7, 11, 16, 0.92);
-  border: 1px solid rgba(143,179,155,0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.premium-card:hover {
-  border-color: rgba(143,179,155,0.3);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(143,179,155,0.08);
-  transform: translateY(-2px);
-}
-
-.glass-input {
-  background: rgba(3, 5, 8, 0.75);
-  border: 1px solid rgba(143,179,155,0.12);
-  color: #f8fafc;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-input:focus {
-  border-color: rgba(143,179,155,0.5);
-  box-shadow: 0 0 16px rgba(143,179,155,0.15);
-  background: rgba(3, 5, 8, 0.9);
-}
-
-.text-gradient {
-  background: #ffffff;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-size: 200% auto;
-}
-
-.glow-overlay {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(130px);
-  pointer-events: none;
-  opacity: 0.15;
-  mix-blend-mode: screen;
-  transition: opacity 0.5s ease;
-}
-
-.glow-shadow {
-  box-shadow: 0 0 30px rgba(143,179,155,0.15);
-}
-
-.glow-shadow-sage {
-  box-shadow: 0 0 30px rgba(143,179,155,0.25);
-}
-
-/* Premium IDE shell */
+/* Outermost shell */
 .ide-shell {
-  background: #121316;
+  background: #1e1e1e;
 }
 
+/* Title / header bar */
 .ide-topbar {
-  background: #17181c;
-  border-bottom: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.035);
-  backdrop-filter: none;
+  background: #3c3c3c;
+  border-bottom: 1px solid #252526;
+  box-shadow: none;
 }
 
+/* Side panels (explorer, chat, AI rail) */
 .ide-panel {
-  background: #181a1f;
-  border-color: rgba(255,255,255,0.10);
+  background: #252526;
+  border-color: #3c3c3c;
 }
 
+/* Activity bar (leftmost icon rail) */
 .ide-rail {
-  background: #15171b;
-  border-color: rgba(255,255,255,0.10);
-  box-shadow: inset -1px 0 rgba(255,255,255,0.04);
+  background: #333333;
+  border-color: #252526;
+  box-shadow: none;
 }
 
+/* Flat secondary button */
 .ide-button {
-  border: 1px solid rgba(255,255,255,0.10);
-  background: #24262b;
-  color: #c7ced8;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #cccccc;
 }
-
 .ide-button:hover {
-  border-color: rgba(255,255,255,0.18);
-  background: #2d3036;
+  border-color: transparent;
+  background: rgba(255,255,255,0.08);
   color: #ffffff;
 }
 
+/* Primary action button (Save, Run, etc.) */
 .ide-primary {
-  border: 1px solid rgba(116, 184, 128, 0.58);
-  background: #6fb982;
-  color: #07110b;
+  border: 1px solid transparent;
+  background: #0e639c;
+  color: #ffffff;
   box-shadow: none;
-  font-weight: 700;
+  font-weight: 600;
 }
-
 .ide-primary:hover {
-  background: #84c792;
+  background: #1177bb;
   filter: none;
   box-shadow: none;
 }
 
+/* Soft active state (toggle buttons) */
 .ide-soft-active {
-  border-color: rgba(116,184,128,0.42) !important;
-  background: rgba(116,184,128,0.12) !important;
-  color: #9ed4aa !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,0.10) !important;
+  color: #ffffff !important;
 }
 
+/* Editor pane background */
 .ide-editor-frame {
-  background: #1f2024;
+  background: #1e1e1e;
 }
 
+/* File tab bar */
 .ide-tabbar {
-  background: #1a1c21;
-  border-color: rgba(255,255,255,0.10);
+  background: #2d2d2d;
+  border-color: #252526;
 }
 
+/* Active file tab */
 .ide-tab-active {
-  background: #22252b;
-  color: #f3f4f6;
-  border-bottom: 1px solid #6fb982;
+  background: #1e1e1e;
+  color: #ffffff;
+  border-bottom: 1px solid transparent;
 }
 
+/* Bottom status bar */
 .ide-status {
-  background: #17181c;
-  border-top: 1px solid rgba(255,255,255,0.10);
+  background: #007acc;
+  border-top: none;
+  color: #ffffff;
 }
 
+/* Form inputs */
 .ide-input {
-  background: #202329;
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #e2e8f0;
+  background: #3c3c3c;
+  border: 1px solid #3c3c3c;
+  color: #cccccc;
 }
-
 .ide-input:focus {
-  border-color: rgba(116,184,128,0.48);
-  box-shadow: 0 0 0 2px rgba(116,184,128,0.10);
+  border-color: #007acc;
+  box-shadow: none;
+  outline: none;
 }
 
+/* ─── Monaco editor overrides ───────────────────────────────────────────── */
 .monaco-editor,
 .monaco-editor-background,
 .monaco-editor .margin {
-  background-color: #1f2024 !important;
+  background-color: #1e1e1e !important;
 }
-
 .monaco-editor .current-line {
   border: none !important;
-  background-color: #2a2c31 !important;
+  background-color: #2a2d2e !important;
 }
+
+/* ─── Legacy glass / premium card styles (kept for landing / auth pages) ── */
+.glass-card {
+  background: rgba(30,30,30,0.96);
+  border: 1px solid #3c3c3c;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.premium-card {
+  background: rgba(30,30,30,0.95);
+  border: 1px solid #3c3c3c;
+  transition: border-color 0.2s;
+}
+.premium-card:hover {
+  border-color: #555555;
+}
+.glass-input {
+  background: #3c3c3c;
+  border: 1px solid #3c3c3c;
+  color: #cccccc;
+}
+.glass-input:focus {
+  border-color: #007acc;
+  background: #3c3c3c;
+}
+.text-gradient {
+  background: #cccccc;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.glow-overlay  { display: none; }
+.glow-shadow   { box-shadow: none; }
+.glow-shadow-sage { box-shadow: none; }

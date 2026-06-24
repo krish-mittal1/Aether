@@ -14,19 +14,14 @@ import {
 } from "lucide-react";
 
 const ITEMS = [
-  { id: "explorer", Icon: FileText, label: "Explorer (Ctrl+B)" },
-  { id: "search", Icon: Search, label: "Search (Ctrl+Shift+F)" },
-  { id: "chat", Icon: MessageSquare, label: "Chat (Ctrl+Shift+Y)" },
-  { id: "users", Icon: Users, label: "Collaborators" },
-  { id: "terminal", Icon: Terminal, label: "Terminal (Ctrl+J)" },
-  { id: "preview", Icon: Eye, label: "Live Preview" },
-  { id: "git", Icon: GitBranch, label: "Git" },
-  { id: "notebook", Icon: BookOpen, label: "Notebook Mode" },
-];
-
-const BOTTOM_ITEMS = [
-  { id: "shortcuts", Icon: Keyboard, label: "Keyboard Shortcuts" },
-  { id: "settings", Icon: Settings2, label: "Editor Settings" },
+  { id: "explorer", Icon: FileText,     label: "Explorer (Ctrl+B)" },
+  { id: "search",   Icon: Search,       label: "Search (Ctrl+Shift+F)" },
+  { id: "chat",     Icon: MessageSquare,label: "Chat (Ctrl+Shift+Y)" },
+  { id: "users",    Icon: Users,        label: "Collaborators" },
+  { id: "terminal", Icon: Terminal,     label: "Terminal (Ctrl+J)" },
+  { id: "preview",  Icon: Eye,          label: "Live Preview" },
+  { id: "git",      Icon: GitBranch,    label: "Git" },
+  { id: "notebook", Icon: BookOpen,     label: "Notebook Mode" },
 ];
 
 export function ActivityBar({
@@ -34,39 +29,48 @@ export function ActivityBar({
   onPanelToggle,
   onShortcuts,
   onSettings,
-  dirtyCount = 0,
-  userCount = 0,
+  dirtyCount  = 0,
+  userCount   = 0,
   messageCount = 0,
 }) {
   return (
-    <aside className="ide-rail flex w-14 flex-col items-center justify-between border-r py-3 shrink-0 select-none">
-      {/* Top actions */}
-      <div className="flex flex-col items-center gap-0.5">
+    <aside
+      className="ide-rail flex shrink-0 select-none flex-col items-center justify-between border-r py-1"
+      style={{ width: 48 }}
+    >
+      {/* Top icons */}
+      <div className="flex flex-col items-center">
         {ITEMS.map(({ id, Icon, label }) => {
           const isActive = activePanel === id;
           let badge = null;
-          if (id === "users" && userCount > 0) badge = userCount;
-          if (id === "chat" && messageCount > 0) badge = messageCount;
-          if (id === "explorer" && dirtyCount > 0) badge = dirtyCount;
+          if (id === "users"    && userCount    > 0) badge = userCount;
+          if (id === "chat"     && messageCount > 0) badge = messageCount;
+          if (id === "explorer" && dirtyCount   > 0) badge = dirtyCount;
 
           return (
             <button
               key={id}
               onClick={() => onPanelToggle(id)}
               title={label}
-              className={`group relative flex h-11 w-11 items-center justify-center rounded-xl transition duration-150 ${
+              style={{ width: 48, height: 48 }}
+              className={`relative flex items-center justify-center transition ${
                 isActive
-                  ? "bg-[#6fb982]/10 text-[#9ed4aa]"
-                  : "text-slate-500 hover:bg-white/[0.045] hover:text-slate-200"
+                  ? "text-white"
+                  : "text-[#858585] hover:text-[#cccccc]"
               }`}
             >
-              {/* Active indicator bar */}
+              {/* VS Code-style left accent bar */}
               {isActive && (
-                <span className="absolute left-0 h-6 w-[3px] rounded-r bg-[#6fb982] " />
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r"
+                  style={{ height: 24, background: "#cccccc" }}
+                />
               )}
-              <Icon size={18} />
+              <Icon size={22} strokeWidth={isActive ? 1.5 : 1.5} />
               {badge != null && badge > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#6fb982] text-[8px] font-black text-slate-950 ">
+                <span
+                  className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#007acc] px-0.5 text-[9px] font-bold text-white"
+                >
                   {badge > 9 ? "9+" : badge}
                 </span>
               )}
@@ -75,21 +79,23 @@ export function ActivityBar({
         })}
       </div>
 
-      {/* Bottom actions */}
-      <div className="flex flex-col items-center gap-0.5">
+      {/* Bottom icons */}
+      <div className="flex flex-col items-center pb-1">
         <button
           onClick={onShortcuts}
           title="Keyboard Shortcuts"
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-white/[0.055] hover:text-slate-100"
+          style={{ width: 48, height: 48 }}
+          className="flex items-center justify-center text-[#858585] transition hover:text-[#cccccc]"
         >
-          <Keyboard size={18} />
+          <Keyboard size={22} strokeWidth={1.5} />
         </button>
         <button
           onClick={onSettings}
-          title="Editor Settings"
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-white/[0.055] hover:text-slate-100"
+          title="Settings"
+          style={{ width: 48, height: 48 }}
+          className="flex items-center justify-center text-[#858585] transition hover:text-[#cccccc]"
         >
-          <Settings2 size={18} />
+          <Settings2 size={22} strokeWidth={1.5} />
         </button>
       </div>
     </aside>
