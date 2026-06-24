@@ -44,11 +44,11 @@ function getFileIconStyles(name, isFolder, isOpen) {
   if (isFolder) {
     return {
       Icon: isOpen ? FolderOpen : Folder,
-      colorClass: "text-[#8fb39b]/80"
+      colorClass: "text-[#cccccc]"
     };
   }
   
-  return { Icon: File, colorClass: "text-[#8fb39b]/80" };
+  return { Icon: File, colorClass: "text-[#cccccc]" };
 }
 
 function TreeNode({
@@ -79,14 +79,19 @@ function TreeNode({
   return (
     <div>
       <div
-        className={`group flex h-9 items-center gap-1 rounded-lg px-2 text-[14px] transition duration-150 ${
+        className={`group flex h-[22px] items-center gap-1 text-[13px] transition-none ${
           isActive
-            ? "bg-[#8fb39b]/10 text-[#8fb39b] font-bold border-l-2 border-[#8fb39b] rounded-l-none"
+            ? "text-white border-l-2 border-[#007acc]"
             : isSelectedFolder
-              ? "bg-white/[0.04] text-white"
-              : "text-[#8fb39b]/70 hover:bg-white/[0.035] hover:text-[#8fb39b]"
+              ? "text-[#cccccc]"
+              : "text-[#cccccc]"
         }`}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+        style={{
+          paddingLeft: `${depth * 12 + (isActive ? 2 : 4)}px`,
+          background: isActive ? "#094771" : undefined,
+        }}
+        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#2a2d2e"; }}
+        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = ""; }}
         onContextMenu={(e) => {
           e.preventDefault();
           onContextMenu(e, node);
@@ -108,7 +113,7 @@ function TreeNode({
         }}
       >
         {isFolder ? (
-          <button className="rounded-md p-0.5 text-slate-500 hover:bg-white/10 hover:text-slate-200" onClick={() => onToggle(node.id)} title={isOpen ? "Collapse" : "Expand"}>
+          <button className="p-0.5 text-[#858585] hover:text-[#cccccc]" onClick={() => onToggle(node.id)} title={isOpen ? "Collapse" : "Expand"}>
             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
         ) : (
@@ -131,29 +136,29 @@ function TreeNode({
         </button>
 
         {/* Tree item inline actions */}
-        <div className="hidden items-center gap-0.5 group-hover:flex">
+        <div className="hidden items-center gap-0 group-hover:flex pr-1">
           {isFolder && (
             <>
-              <button className="rounded p-0.5 hover:bg-white/10 text-slate-400 hover:text-white" title="New file" onClick={() => onStartCreate("file", node.id)}>
-                <FilePlus size={12} />
+              <button className="p-0.5 text-[#858585] hover:text-white" title="New file" onClick={() => onStartCreate("file", node.id)}>
+                <FilePlus size={11} />
               </button>
-              <button className="rounded p-0.5 hover:bg-white/10 text-slate-400 hover:text-white" title="New folder" onClick={() => onStartCreate("folder", node.id)}>
-                <FolderPlus size={12} />
+              <button className="p-0.5 text-[#858585] hover:text-white" title="New folder" onClick={() => onStartCreate("folder", node.id)}>
+                <FolderPlus size={11} />
               </button>
             </>
           )}
-          <button className="rounded p-0.5 hover:bg-white/10 text-slate-400 hover:text-white" title="Rename" onClick={() => onStartRename(node)}>
-            <Pencil size={12} />
+          <button className="p-0.5 text-[#858585] hover:text-white" title="Rename" onClick={() => onStartRename(node)}>
+            <Pencil size={11} />
           </button>
-          <button className="rounded p-0.5 hover:bg-red-500/20 text-slate-400 hover:text-red-300" title="Delete" onClick={() => onStartDelete(node)}>
-            <Trash2 size={12} />
+          <button className="p-0.5 text-[#858585] hover:text-red-400" title="Delete" onClick={() => onStartDelete(node)}>
+            <Trash2 size={11} />
           </button>
         </div>
       </div>
 
       {/* Visual lines for child directories */}
       {isFolder && isOpen && (
-        <div className="relative ml-3 my-0.5 border-l border-[#8fb39b]/25 pl-1.5">
+        <div className="relative ml-3 border-l border-[#3c3c3c] pl-1.5">
           {node.children?.length ? node.children.map((child) => (
             <TreeNode
               key={child.id}
@@ -318,72 +323,63 @@ export function FileExplorer({ files, activeFile, onSelect, onCreate, onImportFo
       onClick={() => menu && setMenu(null)}
     >
       {/* Explorer Header */}
-      <div className="flex h-12 items-center justify-between border-b border-white/10 px-4">
-        <button
-          className={`text-[13px] font-semibold uppercase tracking-wide transition ${selectedFolderId === null ? "text-slate-100" : "text-slate-400 hover:text-slate-100"}`}
-          onClick={() => selectFolder(null)}
-          title="Root workspace"
-        >
-          Workspace
-        </button>
-        <div className="flex items-center gap-0.5">
-          <button className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.035] hover:text-[#8fb39b]" title="Link local folder" onClick={openFolderPicker}>
-            <FolderInput size={12} />
+      <div className="flex h-[35px] shrink-0 items-center justify-between border-b px-3" style={{ borderColor: "#3c3c3c" }}>
+        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#bbbbbb]">Explorer</span>
+        <div className="flex items-center gap-0">
+          <button className="p-1 text-[#858585] hover:text-[#cccccc]" title="Link local folder" onClick={openFolderPicker}>
+            <FolderInput size={14} />
           </button>
-          <button className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.035] hover:text-[#8fb39b]" title="New file" onClick={() => startCreate("file")}>
-            <FilePlus size={12} />
+          <button className="p-1 text-[#858585] hover:text-[#cccccc]" title="New file" onClick={() => startCreate("file")}>
+            <FilePlus size={14} />
           </button>
-          <button className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.035] hover:text-[#8fb39b]" title="New folder" onClick={() => startCreate("folder")}>
-            <FolderPlus size={12} />
+          <button className="p-1 text-[#858585] hover:text-[#cccccc]" title="New folder" onClick={() => startCreate("folder")}>
+            <FolderPlus size={14} />
           </button>
         </div>
       </div>
 
-      <div className="border-b border-white/10 p-2.5">
-        <label className="flex h-9 items-center gap-2 rounded-md border border-white/10 bg-[#1f242a] px-3 text-slate-400">
-          <Search size={14} className="shrink-0 text-slate-500" />
+      <div className="border-b px-2 py-1.5" style={{ borderColor: "#3c3c3c" }}>
+        <label className="flex h-[22px] items-center gap-1.5 border bg-[#3c3c3c] px-2" style={{ borderColor: "#3c3c3c" }}>
+          <Search size={11} className="shrink-0 text-[#858585]" />
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Search files, symbols, commands..."
-            className="min-w-0 flex-1 bg-transparent text-[13px] text-slate-200 outline-none placeholder:text-slate-500"
+            placeholder="Search files..."
+            className="min-w-0 flex-1 bg-transparent text-[12px] text-[#cccccc] outline-none placeholder:text-[#858585]"
           />
-          <span className="rounded border border-white/10 bg-black/25 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">Ctrl P</span>
         </label>
       </div>
 
       {/* Target directory feedback indicator */}
       {selectedFolderId && (
-        <div className="flex items-center justify-between border-b border-slate-700/20 bg-[#060b10] px-3.5 py-2 font-mono text-[10px] text-slate-500">
-          <span>Scope: <span className="font-semibold text-[#b7c9bd]">{selectedFolder?.name}</span></span>
-          <button className="text-slate-600 hover:text-white" onClick={() => selectFolder(null)} title="Clear scope">
-            (reset)
-          </button>
+        <div className="flex items-center justify-between border-b px-3 py-1 font-mono text-[11px] text-[#858585]" style={{ borderColor: "#3c3c3c", background: "#252526" }}>
+          <span>Scope: <span className="text-[#cccccc]">{selectedFolder?.name}</span></span>
+          <button className="text-[#858585] hover:text-white" onClick={() => selectFolder(null)}>(reset)</button>
         </div>
       )}
 
       {/* Creation form */}
       {creator && (
-        <form onSubmit={submitCreate} className="border-b border-slate-700/20 bg-[#060b10]/80 p-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#8fb39b]/25 bg-black/20 px-2.5 py-1.5">
-            {creator.type === "folder" ? <FolderPlus size={11} className="text-[#8fb39b]" /> : <FilePlus size={11} className="text-[#8fb39b]" />}
+        <form onSubmit={submitCreate} className="border-b px-2 py-1" style={{ borderColor: "#3c3c3c", background: "#252526" }}>
+          <div className="flex h-[22px] items-center gap-1.5 border bg-[#3c3c3c] px-2" style={{ borderColor: "#007acc" }}>
+            {creator.type === "folder" ? <FolderPlus size={11} className="text-[#007acc]" /> : <FilePlus size={11} className="text-[#007acc]" />}
             <input
               autoFocus
-              className="min-w-0 flex-1 bg-transparent font-mono text-[11px] text-white outline-none placeholder-slate-600"
+              className="min-w-0 flex-1 bg-transparent font-mono text-[12px] text-white outline-none placeholder-[#858585]"
               value={creator.name}
               onChange={(e) => setCreator({ ...creator, name: e.target.value })}
               onKeyDown={(e) => e.key === "Escape" && setCreator(null)}
               placeholder={`new-${creator.type}`}
             />
-            <button type="button" className="rounded p-0.5 text-slate-500 hover:bg-white/10 hover:text-white" onClick={() => setCreator(null)}>
-              <X size={9} />
+            <button type="button" className="text-[#858585] hover:text-white" onClick={() => setCreator(null)}>
+              <X size={10} />
             </button>
           </div>
         </form>
       )}
 
       {/* File Tree List */}
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-2.5">
+      <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto py-1">
         {tree.length ? tree.map((node) => (
           <TreeNode
             key={node.id}
@@ -405,7 +401,7 @@ export function FileExplorer({ files, activeFile, onSelect, onCreate, onImportFo
             onStartDelete={(node) => setDeleteNode(node)}
           />
         )) : (
-          <div className="rounded-2xl border border-dashed border-slate-700/50 bg-white/[0.025] p-6 text-center font-mono text-[12px] text-slate-500">
+          <div className="mx-2 border border-dashed p-6 text-center font-mono text-[12px] text-[#858585]" style={{ borderColor: "#3c3c3c" }}>
             Empty Workspace
           </div>
         )}
@@ -413,7 +409,7 @@ export function FileExplorer({ files, activeFile, onSelect, onCreate, onImportFo
 
       {/* Drag & Drop Overlay */}
       {dragOver && (
-        <div className="pointer-events-none absolute inset-3 flex items-center justify-center rounded-2xl border border-dashed border-[#8fb39b] bg-[#8fb39b]/[0.04] text-[10px] font-bold uppercase tracking-wider text-[#b7c9bd] backdrop-blur-[0.5px]">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center border-2 border-dashed border-[#007acc] text-[11px] font-bold uppercase tracking-wider text-[#cccccc]" style={{ background: "rgba(0,122,204,0.06)" }}>
           Drop folder to import
         </div>
       )}
@@ -421,19 +417,20 @@ export function FileExplorer({ files, activeFile, onSelect, onCreate, onImportFo
       {/* Rename Modal */}
       {renameNode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xs rounded-2xl border border-line bg-[#090b10]/95 backdrop-blur-md shadow-2xl overflow-hidden">
-            <div className="border-b border-line px-4 py-3 text-xs font-bold text-white uppercase tracking-wider">Rename Item</div>
+          <div className="w-full max-w-xs border shadow-2xl overflow-hidden" style={{ background: "#252526", borderColor: "#3c3c3c" }}>
+            <div className="border-b px-4 py-2 text-[11px] font-bold text-[#cccccc] uppercase tracking-wider" style={{ borderColor: "#3c3c3c" }}>Rename Item</div>
             <form className="p-4" onSubmit={(e) => { e.preventDefault(); const v = renameNode.value.trim(); if (v) onRename(renameNode.node, v); setRenameNode(null); }}>
               <input
                 autoFocus
-                className="ide-input w-full rounded-xl px-3.5 py-2.5 font-mono text-xs outline-none"
+                className="w-full border bg-[#3c3c3c] px-3 py-2 font-mono text-[12px] text-white outline-none focus:border-[#007acc]"
+                style={{ borderColor: "#3c3c3c" }}
                 value={renameNode.value}
                 onChange={(e) => setRenameNode({ ...renameNode, value: e.target.value })}
                 onKeyDown={(e) => e.key === "Escape" && setRenameNode(null)}
               />
-              <div className="mt-4 flex justify-end gap-2 text-xs">
-                <button type="button" onClick={() => setRenameNode(null)} className="rounded-xl border border-line bg-panel/30 px-3.5 py-2 font-bold text-slate-300 hover:bg-white/5 hover:text-white transition">Cancel</button>
-                <button type="submit" className="ide-primary rounded-xl px-4 py-2 font-black transition">Rename</button>
+              <div className="mt-3 flex justify-end gap-2 text-[12px]">
+                <button type="button" onClick={() => setRenameNode(null)} className="border px-3 py-1.5 text-[#cccccc] hover:text-white transition" style={{ borderColor: "#3c3c3c", background: "transparent" }}>Cancel</button>
+                <button type="submit" className="px-3 py-1.5 font-bold text-white transition" style={{ background: "#0e639c" }}>Rename</button>
               </div>
             </form>
           </div>
@@ -442,16 +439,16 @@ export function FileExplorer({ files, activeFile, onSelect, onCreate, onImportFo
 
       {/* Delete Confirm Modal */}
       {deleteNode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xs rounded-2xl border border-red-500/20 bg-[#090b10]/95 backdrop-blur-md shadow-2xl overflow-hidden">
-            <div className="border-b border-line px-4 py-3 text-xs font-bold text-red-400 uppercase tracking-wider">Delete confirmation</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-xs border shadow-2xl overflow-hidden" style={{ background: "#252526", borderColor: "#3c3c3c" }}>
+            <div className="border-b px-4 py-2 text-[11px] font-bold text-red-400 uppercase tracking-wider" style={{ borderColor: "#3c3c3c" }}>Delete confirmation</div>
             <div className="p-4">
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Are you sure you want to permanently delete <span className="font-mono text-white font-bold">"{deleteNode.name}"</span>? This action is irreversible.
+              <p className="text-[12px] text-[#858585] leading-relaxed">
+                Permanently delete <span className="font-mono text-white font-bold">"{deleteNode.name}"</span>? This cannot be undone.
               </p>
-              <div className="mt-5 flex justify-end gap-2 text-xs">
-                <button onClick={() => setDeleteNode(null)} className="rounded-xl border border-line bg-panel/30 px-3.5 py-2 font-bold text-slate-300 hover:bg-white/5 hover:text-white transition">Cancel</button>
-                <button onClick={() => { onDelete(deleteNode); setDeleteNode(null); }} className="rounded-xl bg-red-500 px-4 py-2 font-black text-white hover:brightness-105 transition">Delete</button>
+              <div className="mt-4 flex justify-end gap-2 text-[12px]">
+                <button onClick={() => setDeleteNode(null)} className="border px-3 py-1.5 text-[#cccccc] hover:text-white transition" style={{ borderColor: "#3c3c3c", background: "transparent" }}>Cancel</button>
+                <button onClick={() => { onDelete(deleteNode); setDeleteNode(null); }} className="px-3 py-1.5 font-bold text-white transition" style={{ background: "#c72e2e" }}>Delete</button>
               </div>
             </div>
           </div>

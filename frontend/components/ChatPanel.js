@@ -48,7 +48,7 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
 
   return (
     <aside className="ide-panel flex h-full w-full shrink-0 select-none flex-col font-sans">
-      <div className="flex h-12 shrink-0 items-center border-b border-white/10 px-3">
+      <div className="flex h-[35px] shrink-0 items-center border-b px-1" style={{ borderColor: "#3c3c3c" }}>
         {[
           { id: "chat", Icon: MessageSquare, label: "CHAT" },
           { id: "peers", Icon: Users, label: `PEERS (${Math.max(1, users.length)})` },
@@ -57,17 +57,17 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`relative flex h-full items-center gap-1.5 px-3 text-[12px] font-black uppercase tracking-[0.12em] transition ${
-              tab === id ? "text-[#9ed4aa]" : "text-slate-500 hover:text-slate-200"
+            className={`relative flex h-full items-center gap-1.5 px-3 text-[11px] font-bold uppercase tracking-[0.06em] transition ${
+              tab === id ? "text-white" : "text-[#858585] hover:text-[#cccccc]"
             }`}
           >
-            {tab === id && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[#6fb982] " />}
-            <Icon size={12} />
+            {tab === id && <span className="absolute inset-x-0 bottom-0 h-[1px] bg-[#007acc]" />}
+            <Icon size={11} />
             {label}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-1 rounded-full bg-[#6fb982] px-2 py-0.5 ">
-          <span className="font-mono text-[9px] font-black text-slate-950">+{Math.max(1, users.length)}</span>
+        <div className="ml-auto flex items-center gap-1 px-2 py-0.5" style={{ background: "#007acc", borderRadius: 2 }}>
+          <span className="font-mono text-[9px] font-bold text-white">+{Math.max(1, users.length)}</span>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
           <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-3 py-4">
             {!grouped.length && (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#6fb982]/15 bg-[#6fb982]/5 text-[#b7c9bd]">
+                <div className="flex h-12 w-12 items-center justify-center border text-[#858585]" style={{ borderColor: "#3c3c3c", background: "#2d2d2d" }}>
                   <MessageSquare size={18} />
                 </div>
                 <p className="text-xs leading-relaxed text-slate-500">No messages yet.<br />Start the room conversation.</p>
@@ -116,7 +116,8 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
                     </div>
                   )}
                   <div
-                    className={`max-w-[86%] whitespace-pre-wrap break-words rounded-[16px] border border-white/10 bg-[#22252b] px-4 py-2.5 text-[14px] leading-relaxed text-slate-100 shadow-sm`}
+                    className={`max-w-[86%] whitespace-pre-wrap break-words border border-white/10 bg-[#2d2d2d] px-3 py-2 text-[13px] leading-relaxed text-[#cccccc]`}
+                    style={{ borderRadius: 2 }}
                   >
                     {message.content}
                   </div>
@@ -130,7 +131,7 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
             {typingUsers.length > 0 && `${typingUsers.slice(0, 2).join(", ")} editing...`}
           </div>
 
-          <form onSubmit={submit} className="flex shrink-0 items-center gap-2 border-t border-white/10 bg-[#17181c] p-3">
+          <form onSubmit={submit} className="flex shrink-0 items-center gap-2 border-t p-2" style={{ borderColor: "#3c3c3c", background: "#252526" }}>
             <input
               ref={inputRef}
               value={content}
@@ -144,14 +145,16 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
               placeholder="Message..."
               maxLength={2000}
               autoComplete="off"
-              className="h-11 min-w-0 flex-1 rounded-md border border-white/10 bg-[#202329] px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#6fb982]"
+              className="h-[28px] min-w-0 flex-1 border border-transparent bg-[#3c3c3c] px-3 text-[13px] text-white outline-none transition placeholder:text-[#858585] focus:border-[#007acc]"
+              style={{ borderRadius: 2 }}
             />
             <button
               type="submit"
               disabled={!content.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#6fb982] text-slate-950 transition hover:bg-[#84c792] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-600 disabled:shadow-none"
+              className="flex h-[28px] w-[28px] shrink-0 items-center justify-center text-white transition disabled:cursor-not-allowed disabled:text-[#858585]"
+              style={{ background: "#007acc", borderRadius: 2 }}
             >
-              <Send size={14} />
+              <Send size={12} />
             </button>
           </form>
         </>
@@ -182,13 +185,13 @@ export function ChatPanel({ messages, users, typingUsers, onSend, voiceSlot }) {
               {users.map((user) => {
                 const isSelf = user.id === currentUser?.id;
                 return (
-                  <div key={user.id} className={`flex items-center gap-3 rounded-xl border p-3 ${isSelf ? "border-[#6fb982]/20 bg-[#6fb982]/[0.07]" : "border-white/10 bg-white/[0.035]"}`}>
+                  <div key={user.id} className={`flex items-center gap-3 border p-2.5 ${isSelf ? "bg-[#094771]/40" : "bg-[#2d2d2d]"}`} style={{ borderColor: isSelf ? "#007acc" : "#3c3c3c", borderRadius: 2 }}>
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-slate-950" style={{ background: colorHash(user.id) }}>
                       {getInitials(user.username)}
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-sm font-bold text-slate-100">
-                        {user.username}{isSelf && <span className="ml-1 text-[10px] text-[#9ed4aa]">(you)</span>}
+                        {user.username}{isSelf && <span className="ml-1 text-[10px] text-[#007acc]">(you)</span>}
                       </div>
                       <div className="truncate font-mono text-[10px] text-slate-500">{user.email}</div>
                     </div>

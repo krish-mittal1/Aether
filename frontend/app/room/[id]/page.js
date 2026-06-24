@@ -1596,7 +1596,7 @@ Keep it concise but useful. Do not rewrite the file.`
 
       {/* Status Bar */}
       {!zenMode && (
-        <footer className="ide-status z-20 flex h-[22px] items-center justify-between px-3 font-mono text-[11px] text-white select-none">
+        <footer style={{ background: "#007acc" }} className="z-20 flex h-[22px] items-center justify-between px-3 font-mono text-[11px] text-white select-none">
           <span className="flex items-center gap-0">
             <span className="flex items-center gap-1.5 px-2 hover:bg-white/[0.12] transition h-full cursor-pointer">
               <span className="h-1.5 w-1.5 rounded-full bg-white/80" />{users.length} Peer{users.length !== 1 ? "s" : ""}
